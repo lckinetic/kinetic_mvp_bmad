@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 import logging
 
@@ -10,6 +12,7 @@ from app.db import models  # noqa: F401
 
 from app.api.health import router as health_router
 from app.api.onramp import router as onramp_router
+from app.api.webhooks import router as webhooks_router
 
 logger = logging.getLogger("kinetic")
 
@@ -18,10 +21,8 @@ def create_app() -> FastAPI:
     settings = get_settings()
     configure_logging(settings.log_level)
 
-    app = FastAPI(title="Kinetic MVP API", version="0.1.0")
-
-    @app.on_event("startup")
-    def startup():
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
         engine = get_engine(settings)
         create_db_and_tables(engine)
         logger.info(
@@ -37,9 +38,17 @@ def create_app() -> FastAPI:
                 }
             ),
         )
+        yield
+
+    app = FastAPI(title="Kinetic MVP API", version="0.1.0", lifespan=lifespan)
+
+    @app.get("/")
+    def root():
+        return {"message": "Kinetic MVP API", "docs": "/docs", "health": "/health"}
 
     app.include_router(health_router)
     app.include_router(onramp_router)
+    app.include_router(webhooks_router)
     return app
 
 
