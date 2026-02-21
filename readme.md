@@ -155,7 +155,8 @@ curl http://localhost:8000/health
 ## activate environment
 source .venv/bin/activate
 
-# start postgresql
+# start or stop postgresql
+brew services stop postgresql@15
 brew services start postgresql@15
 brew services restart postgresql@15
 psql -h 127.0.0.1 -p 5432 -U kinetic -d kinetic
