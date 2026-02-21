@@ -13,6 +13,49 @@ from app.db.engine import get_engine
 from app.db.models import WebhookEvent, Order
 from sqlmodel import select
 
+
+# internal status
+ALLOWED_STATUSES = {
+    "pending",
+    "processing",
+    "completed",
+    "failed",
+    "cancelled",
+}
+
+TERMINAL_STATES = {"completed", "failed", "cancelled"}
+
+# internal and external status mapping
+def normalise_status(payload: dict) -> str | None:
+    """
+    Extract a status from webhook payload and normalise it to our MVP status set.
+    Returns None if no usable status found.
+    """
+    raw = payload.get("status") or payload.get("order_status") or payload.get("orderStatus")
+    if not raw:
+        return None
+
+    s = str(raw).strip().lower()
+
+    # Lightweight normalisation (expand later if needed)
+    mapping = {
+        "success": "completed",
+        "succeeded": "completed",
+        "complete": "completed",
+        "completed": "completed",
+        "processing": "processing",
+        "in_progress": "processing",
+        "in progress": "processing",
+        "pending": "pending",
+        "failed": "failed",
+        "error": "failed",
+        "cancelled": "cancelled",
+        "canceled": "cancelled",
+    }
+    s = mapping.get(s, s)
+
+    return s if s in ALLOWED_STATUSES else None
+
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 
 
@@ -100,28 +143,37 @@ async def banxa_webhook(
         db.rollback()
         return {"status": "duplicate_ignored", "idempotency_key": idem}
 
+
     # 5) Update order status if order exists
     if order_id:
         stmt = select(Order).where(Order.order_id == str(order_id))
         order = db.exec(stmt).first()
 
-        if order:
-            new_status = str(payload.get("status") or payload.get("order_status") or "").lower()
+    if order:
+        new_status = normalise_status(payload)
 
-            if new_status:
+        # Don't overwrite terminal states
+        if new_status:
+            if (order.order_status or "").lower() in TERMINAL_STATES:
+                # already terminal; keep it stable
+                pass
+            else:
                 order.order_status = new_status
-                order.updated_at = event.received_at
+                order.updated_at = event.received_at  # or event.created_at if you use that field
 
-                # simple terminal-state example
-                if new_status in {"completed", "success", "failed", "cancelled"}:
+                if new_status in TERMINAL_STATES:
                     order.completed_at = event.received_at
 
                 db.add(order)
                 db.commit()
 
-    # mark webhook event as processed
-    event.processed = True
-    db.add(event)
-    db.commit()
-
     return {"status": "received", "idempotency_key": idem}
+
+@router.get("/banxa/events")
+def list_banxa_events(
+    limit: int = 20,
+    db: Session = Depends(get_db),
+):
+    limit = max(1, min(limit, 200))  # keep it bounded
+    stmt = select(WebhookEvent).where(WebhookEvent.provider == "banxa").order_by(WebhookEvent.id.desc()).limit(limit)
+    return db.exec(stmt).all()

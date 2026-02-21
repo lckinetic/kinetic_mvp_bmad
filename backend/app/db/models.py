@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from typing import Optional, Dict, Any
 from sqlmodel import SQLModel, Field, Column
 from sqlalchemy import JSON, Index
+from sqlalchemy import UniqueConstraint
 
 
 def utcnow() -> datetime:
@@ -11,6 +12,9 @@ def utcnow() -> datetime:
 
 
 class Order(SQLModel, table=True):
+    __table_args__ = (
+    UniqueConstraint("provider", "direction", "client_reference", name="uq_order_provider_direction_clientref"),
+)
     id: Optional[int] = Field(default=None, primary_key=True)
 
     provider: str = Field(default="banxa", index=True)
@@ -18,7 +22,8 @@ class Order(SQLModel, table=True):
 
     order_id: str = Field(index=True)  # provider order id
     order_status: str = Field(default="pending", index=True)
-
+    client_reference: Optional[str] = Field(default=None, index=True)
+    
     user_email: str = Field(index=True)
     fiat_amount: float
     fiat_currency: str

@@ -6,6 +6,9 @@ from sqlmodel import Session, select
 from app.db.models import Order
 from app.services.banxa_client import BanxaClient
 
+from sqlmodel import select
+from sqlalchemy.exc import IntegrityError
+
 
 def utcnow() -> datetime:
     return datetime.now(timezone.utc)
@@ -21,7 +24,20 @@ def create_onramp_order(
     wallet_address: str,
     blockchain: str,
     user_email: str,
+    client_reference: str | None = None,
 ) -> Order:
+    if client_reference:
+        client_reference = client_reference.strip()
+
+        stmt = select(Order).where(
+            Order.provider == "banxa",
+            Order.direction == "onramp",
+            Order.client_reference == client_reference,
+        )
+        existing = db.exec(stmt).first()
+        if existing:
+            return existing
+
     result = banxa.create_onramp_order(
         fiat_amount=fiat_amount,
         fiat_currency=fiat_currency,
@@ -35,6 +51,7 @@ def create_onramp_order(
         provider="banxa",
         direction="onramp",
         order_id=result.order_id,
+        client_reference=client_reference,
         order_status=result.status,
         user_email=user_email,
         fiat_amount=fiat_amount,
@@ -46,8 +63,27 @@ def create_onramp_order(
         created_at=result.created_at,
         updated_at=utcnow(),
     )
+
     db.add(order)
-    db.commit()
+
+    if client_reference:
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            # Another request inserted the same client_reference first — return that row
+            stmt = select(Order).where(
+                Order.provider == "banxa",
+                Order.direction == "onramp",
+                Order.client_reference == client_reference,
+            )
+            existing = db.exec(stmt).first()
+            if existing:
+                return existing
+            raise
+    else:
+        db.commit()
+
     db.refresh(order)
     return order
 

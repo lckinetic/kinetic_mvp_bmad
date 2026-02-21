@@ -164,6 +164,18 @@ psql -h 127.0.0.1 -p 5432 -U kinetic -d kinetic
 \dt
 \q
 
+# Postman Collection
+
+This folder contains the version-controlled Postman collection and environment
+for local MVP development.
+
+Rules:
+- Any new API endpoint must be reflected here.
+- Update collection before merging feature branch.
+- Keep examples realistic and aligned with docs/api/.
+MD
+
+
 # validating the full startup chain
 env → config → FastAPI → DB engine → tables → API endpoint
 
