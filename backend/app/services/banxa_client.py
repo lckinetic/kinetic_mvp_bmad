@@ -42,3 +42,24 @@ class BanxaClient:
             )
 
         raise NotImplementedError("Real Banxa calls not implemented yet. Set MOCK_MODE=true.")
+
+    def create_offramp_order(
+        self,
+        *,
+        crypto_amount: float,
+        crypto_currency: str,
+        fiat_currency: str,
+        destination_reference: str,
+        user_email: str,
+    ) -> BanxaCreateOrderResult:
+        if self.mock_mode:
+            oid = f"banxa_mock_off_{uuid.uuid4().hex[:12]}"
+            url = f"https://checkout.sandbox.banxa.com/?order_id={oid}"
+            return BanxaCreateOrderResult(
+                order_id=oid,
+                checkout_url=url,
+                status="pending",
+                created_at=datetime.now(timezone.utc),
+            )
+
+        raise NotImplementedError("Real Banxa offramp calls not implemented yet. Set MOCK_MODE=true.")

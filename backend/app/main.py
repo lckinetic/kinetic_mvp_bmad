@@ -12,6 +12,7 @@ from app.db import models  # noqa: F401
 
 from app.api.health import router as health_router
 from app.api.onramp import router as onramp_router
+from app.api.offramp import router as offramp_router
 from app.api.webhooks import router as webhooks_router
 
 logger = logging.getLogger("kinetic")
@@ -48,6 +49,7 @@ def create_app() -> FastAPI:
 
     app.include_router(health_router)
     app.include_router(onramp_router)
+    app.include_router(offramp_router)
     app.include_router(webhooks_router)
     return app
 

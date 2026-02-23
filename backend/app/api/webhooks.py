@@ -6,12 +6,11 @@ import json
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from app.core.config import get_settings, Settings
 from app.db.engine import get_engine
 from app.db.models import WebhookEvent, Order
-from sqlmodel import select
 
 
 # internal status
@@ -24,6 +23,7 @@ ALLOWED_STATUSES = {
 }
 
 TERMINAL_STATES = {"completed", "failed", "cancelled"}
+
 
 # internal and external status mapping
 def normalise_status(payload: dict) -> str | None:
@@ -55,6 +55,7 @@ def normalise_status(payload: dict) -> str | None:
     s = mapping.get(s, s)
 
     return s if s in ALLOWED_STATUSES else None
+
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])
 
@@ -123,10 +124,15 @@ async def banxa_webhook(
     event_type = str(payload.get("event") or payload.get("type") or "unknown")
     order_id = payload.get("order_id") or payload.get("orderId") or payload.get("id")
 
+    # Option 2: Use payload.direction if present, default to onramp (demo-friendly)
+    direction = str(payload.get("direction") or "onramp").strip().lower()
+    if direction not in {"onramp", "offramp"}:
+        direction = "onramp"
+
     # 4) Store webhook event (unique constraint enforces idempotency)
     event = WebhookEvent(
         provider="banxa",
-        direction="onramp",  # keep MVP simple; later derive direction
+        direction=direction,
         event_type=event_type,
         order_id=str(order_id) if order_id else None,
         payload=payload,
@@ -143,10 +149,13 @@ async def banxa_webhook(
         db.rollback()
         return {"status": "duplicate_ignored", "idempotency_key": idem}
 
-
     # 5) Update order status if order exists
+    order = None
     if order_id:
-        stmt = select(Order).where(Order.order_id == str(order_id))
+        stmt = select(Order).where(
+            Order.order_id == str(order_id),
+            Order.direction == direction,
+        )
         order = db.exec(stmt).first()
 
     if order:
@@ -159,7 +168,7 @@ async def banxa_webhook(
                 pass
             else:
                 order.order_status = new_status
-                order.updated_at = event.received_at  # or event.created_at if you use that field
+                order.updated_at = event.received_at
 
                 if new_status in TERMINAL_STATES:
                     order.completed_at = event.received_at
@@ -168,6 +177,7 @@ async def banxa_webhook(
                 db.commit()
 
     return {"status": "received", "idempotency_key": idem}
+
 
 @router.get("/banxa/events")
 def list_banxa_events(

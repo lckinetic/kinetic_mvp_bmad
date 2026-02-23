@@ -2,9 +2,8 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any
-from sqlmodel import SQLModel, Field, Column
-from sqlalchemy import JSON, Index
-from sqlalchemy import UniqueConstraint
+from sqlmodel import SQLModel, Field
+from sqlalchemy import JSON, Index, UniqueConstraint, Column
 
 
 def utcnow() -> datetime:
@@ -13,8 +12,9 @@ def utcnow() -> datetime:
 
 class Order(SQLModel, table=True):
     __table_args__ = (
-    UniqueConstraint("provider", "direction", "client_reference", name="uq_order_provider_direction_clientref"),
-)
+        UniqueConstraint("provider", "order_id", name="uq_order_provider_orderid"),
+        UniqueConstraint("provider", "direction", "client_reference", name="uq_order_provider_direction_clientref"),
+    )
     id: Optional[int] = Field(default=None, primary_key=True)
 
     provider: str = Field(default="banxa", index=True)
@@ -25,12 +25,14 @@ class Order(SQLModel, table=True):
     client_reference: Optional[str] = Field(default=None, index=True)
     
     user_email: str = Field(index=True)
-    fiat_amount: float
-    fiat_currency: str
-    crypto_currency: str
+    fiat_amount: Optional[float] = None  # onramp
+    fiat_currency: Optional[str] = Field(default=None, index=True)
+    crypto_currency: Optional[str] = Field(default=None, index=True)
+    crypto_amount: Optional[float] = None  # offramp
 
-    wallet_address: str
-    blockchain: str
+    wallet_address: Optional[str] = None  # onramp
+    blockchain: Optional[str] = None  # onramp
+    destination_reference: Optional[str] = None  # offramp (e.g. bank account)
 
     checkout_url: Optional[str] = None
     transaction_hash: Optional[str] = None
