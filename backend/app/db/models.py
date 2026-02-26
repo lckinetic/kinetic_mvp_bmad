@@ -58,6 +58,20 @@ class WebhookEvent(SQLModel, table=True):
 
     idempotency_key: str = Field(index=True)
 
+class WorkflowRun(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+
+    template_name: str = Field(index=True)
+    status: str = Field(default="running", index=True)  # running|completed|failed
+
+    # raw inputs/outputs for demo + debugging
+    input: Dict[str, Any] = Field(sa_column=Column(JSON), default_factory=dict)
+    output: Dict[str, Any] = Field(sa_column=Column(JSON), default_factory=dict)
+    error: Optional[str] = None
+
+    created_at: datetime = Field(default_factory=utcnow)
+    updated_at: datetime = Field(default_factory=utcnow)
+
 
 Index(
     "ix_webhook_events_provider_direction_key",
@@ -66,3 +80,18 @@ Index(
     WebhookEvent.idempotency_key,
     unique=True,
 )
+
+class WorkflowStep(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+
+    run_id: int = Field(index=True, foreign_key="workflowrun.id")
+    seq: int = Field(index=True)  # 1..n within a run
+
+    step_name: str = Field(index=True)  # e.g. "onramp.create"
+    status: str = Field(default="running", index=True)  # running|completed|failed
+
+    data: Dict[str, Any] = Field(sa_column=Column(JSON), default_factory=dict)
+    error: Optional[str] = None
+
+    started_at: datetime = Field(default_factory=utcnow)
+    ended_at: Optional[datetime] = None
