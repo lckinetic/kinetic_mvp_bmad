@@ -31,12 +31,13 @@ from app.domain.catalog import (
         "Sell stablecoins back to fiat (offramp)",
         "Confirm payout completion",
     ],
-    step_outline=[
-        "onramp.create",
-        "onramp.complete",
-        "offramp.create",
-        "offramp.complete",
-    ],
+    step_outline=["onramp.create", "onramp.complete", "offramp.create", "offramp.complete"],
+    step_labels={
+    "onramp.create": "Buy stablecoins (create onramp order)",
+    "onramp.complete": "Confirm purchase completed",
+    "offramp.create": "Sell stablecoins (create offramp order)",
+    "offramp.complete": "Confirm payout completed",
+    },
     input_schema=[
         {
             "name": "fiat_amount",

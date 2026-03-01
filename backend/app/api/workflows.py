@@ -10,10 +10,11 @@ from app.core.config import get_settings, Settings
 from app.db.engine import get_engine
 
 from app.workflows.registry import list_templates, get_template
-from app.services.banxa_client import BanxaClient
-from app.db.models import WorkflowRun, WorkflowStep, utcnow
-from app.workflows.validation import validate_template_input
+from app.db.models import WorkflowRun, WorkflowStep
 import app.workflows  # noqa: F401  (ensures templates register)
+
+from app.engine.metrics import compute_run_metrics
+from app.engine.runner import run_template
 
 router = APIRouter(prefix="/workflows", tags=["workflows"])
 
@@ -55,38 +56,7 @@ class WorkflowRunResponse(BaseModel):
 
 
 def _to_response(db: Session, r: WorkflowRun) -> WorkflowRunResponse:
-    # Pull steps for this run
-    steps = db.exec(
-        select(WorkflowStep)
-        .where(WorkflowStep.run_id == r.id)
-        .order_by(WorkflowStep.seq.asc(), WorkflowStep.id.asc())
-    ).all()
-
-    total = len(steps)
-    completed = sum(1 for s in steps if s.status == "completed")
-    failed = sum(1 for s in steps if s.status == "failed")
-    running = sum(1 for s in steps if s.status == "running")
-
-    progress_pct = int((completed / total) * 100) if total else 0
-
-    # Duration: from earliest started_at to latest ended_at (or updated_at if still running)
-    if total:
-        start_ts = min(s.started_at for s in steps if s.started_at)
-        end_candidates = [s.ended_at for s in steps if s.ended_at] or [r.updated_at or r.created_at]
-        end_ts = max(end_candidates)
-        duration_ms = int((end_ts - start_ts).total_seconds() * 1000)
-    else:
-        duration_ms = 0
-
-    metrics = {
-        "steps_total": total,
-        "steps_completed": completed,
-        "steps_failed": failed,
-        "steps_running": running,
-        "progress_pct": progress_pct,
-        "duration_ms": duration_ms,
-    }
-
+    metrics = compute_run_metrics(db, r)
     return WorkflowRunResponse(
         id=r.id,
         template_name=r.template_name,
@@ -105,70 +75,11 @@ def run_workflow(
     req: RunWorkflowRequest,
     db: Session = Depends(get_db),
 ):
-    # 0) Validate template exists (unknown template => 404, do not create a run)
-    try:
-        t = get_template(template_name)
-    except KeyError:
-        raise HTTPException(status_code=404, detail="Template not found")
-    run = WorkflowRun(
+    run = run_template(
+        db=db,
         template_name=template_name,
-        status="running",
-        input=req.input or {},
-        output={},
-        updated_at=utcnow(),
+        input_data=req.input or {},
     )
-    db.add(run)
-    db.commit()
-    db.refresh(run)  # <-- run.id now exists
-
-    settings = get_settings()
-    banxa = BanxaClient(mock_mode=settings.mock_mode)
-
-    # inject run_id AFTER refresh
-    run_input = dict(run.input or {})
-    run_input["run_id"] = run.id
-    run.input = run_input
-    db.add(run)
-    db.commit()
-    db.refresh(run)
-
-    try:
-        fn = t["function"]
-
-        schema = t.get("input_schema", [])
-        validated_input = validate_template_input(run_input, schema)
-        validated_input["run_id"] = run.id
-
-        output = fn(
-            db=db,
-            settings=settings,
-            banxa=banxa,
-            input=validated_input,
-        )
-
-        run.status = "completed"
-        run.output = output or {}
-        run.updated_at = utcnow()
-
-
-    except HTTPException as e:
-        run.status = "failed"
-        run.error = str(e.detail)
-        run.updated_at = utcnow()
-        db.add(run)
-        db.commit()
-        db.refresh(run)
-        raise
-
-    except Exception as e:
-        run.status = "failed"
-        run.error = f"{type(e).__name__}: {e}"
-        run.updated_at = utcnow()
-
-        db.add(run)
-        db.commit()
-        db.refresh(run)
-
     return _to_response(db, run)
 
 
@@ -234,6 +145,7 @@ def get_template_details(template_name: str):
         "business_summary": t.get("business_summary", ""),
         "business_steps": t.get("business_steps", []),
         "step_outline": t.get("step_outline", []),
+        "step_labels": t.get("step_labels", {}),
     }
 
 @router.get("/runs/{run_id}/steps")

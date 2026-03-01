@@ -1,0 +1,337 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Kinetic MVP UI</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; }
+    .wrap { display: grid; grid-template-columns: 440px 1fr; height: 100vh; }
+    .panel { padding: 16px; border-right: 1px solid #eee; overflow: auto; }
+    .main { padding: 16px; overflow: auto; }
+    h2,h3 { margin: 0 0 10px 0; }
+    label { display:block; margin-top: 12px; font-size: 12px; color:#333; }
+    input, select { width: 100%; padding: 8px; margin-top: 6px; box-sizing: border-box; }
+    button { margin-top: 16px; padding: 10px 12px; width: 100%; cursor: pointer; }
+    button[disabled] { opacity: 0.6; cursor: not-allowed; }
+    pre { background: #f7f7f7; padding: 12px; overflow:auto; border-radius: 8px; }
+    table { width:100%; border-collapse: collapse; }
+    th, td { border-bottom: 1px solid #eee; padding: 8px; font-size: 13px; text-align: left; vertical-align: top; }
+    .pill { display:inline-block; padding: 4px 8px; border-radius: 999px; background:#eee; font-size: 12px; }
+    .ok { background:#e6ffed; }
+    .bad { background:#ffe6e6; }
+    .muted { color:#666; font-size: 13px; }
+
+    /* stepper */
+    .stepper { display:flex; gap:10px; flex-wrap:wrap; margin-top: 8px; }
+    .stepper .node {
+      padding: 6px 10px;
+      border-radius: 999px;
+      background:#eee;
+      font-size: 12px;
+      border: 1px solid #ddd;
+      user-select: none;
+      white-space: nowrap;
+    }
+    .stepper .done { background:#e6ffed; border-color:#bfe5c8; }
+    .stepper .fail { background:#ffe6e6; border-color:#f2bcbc; }
+    .stepper .run  { background:#fff7d6; border-color:#e7d38a; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="panel">
+      <h2>Kinetic MVP</h2>
+      <div class="muted">Choose a pre-defined workflow template and run it.</div>
+
+      <label>Template</label>
+      <select id="templateSelect"></select>
+
+      <div id="templateMeta" style="margin-top:12px;"></div>
+
+      <h3 style="margin-top:18px;">Inputs</h3>
+      <form id="dynamicForm"></form>
+
+      <button id="runBtn">Run workflow</button>
+
+      <div id="uiError" style="margin-top:12px; color:#b00;"></div>
+    </div>
+
+    <div class="main">
+      <h2>Workflow Overview</h2>
+      <div id="workflowOverview" class="muted"></div>
+
+      <h3 style="margin-top:18px;">Progress</h3>
+      <div id="progressBar"></div>
+
+      <h3 style="margin-top:18px;">Run Summary</h3>
+      <div id="runSummary" class="muted"></div>
+
+      <h3 style="margin-top:18px;">Steps</h3>
+      <div id="stepsTable" class="muted"></div>
+
+      <h3 style="margin-top:18px;">Output</h3>
+      <pre id="outputJson">{}</pre>
+
+      <h3 style="margin-top:18px;">Error</h3>
+      <pre id="errorBox"></pre>
+    </div>
+  </div>
+
+<script>
+const el = (id) => document.getElementById(id);
+
+function escapeHtml(s) {
+  return String(s)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+function pretty(obj) { return JSON.stringify(obj, null, 2); }
+
+async function fetchJson(path, opts={}) {
+  const r = await fetch(path, opts);
+  const txt = await r.text();
+  let data = null;
+  try { data = txt ? JSON.parse(txt) : null; } catch(e) {}
+  if (!r.ok) {
+    const msg = (data && data.detail) ? data.detail : (txt || r.statusText);
+    const err = new Error(msg);
+    err.status = r.status;
+    err.data = data;
+    throw err;
+  }
+  return data;
+}
+
+function renderField(field) {
+  const name = field.name;
+  const label = field.label || name;
+  const required = !!field.required;
+  const type = field.type || "string";
+  const help = field.help_text || "";
+  const placeholder = field.placeholder || "";
+
+  let inputHtml = "";
+
+  if (type === "select") {
+    const options = field.options || [];
+    const def = field.default ?? "";
+    inputHtml = `
+      <select name="${escapeHtml(name)}" ${required ? "required" : ""}>
+        ${options.map(o => `<option value="${escapeHtml(o)}" ${String(o)===String(def) ? "selected":""}>${escapeHtml(o)}</option>`).join("")}
+      </select>
+    `;
+  } else {
+    const htmlType = (type === "email") ? "email" : (type === "number" ? "number" : "text");
+    const def = field.default ?? "";
+    const min = (field.min !== undefined) ? `min="${field.min}"` : "";
+    const max = (field.max !== undefined) ? `max="${field.max}"` : "";
+    const step = (field.step !== undefined) ? `step="${field.step}"` : "";
+    inputHtml = `
+      <input
+        type="${htmlType}"
+        name="${escapeHtml(name)}"
+        value="${escapeHtml(def)}"
+        placeholder="${escapeHtml(placeholder)}"
+        ${required ? "required" : ""}
+        ${min} ${max} ${step}
+      />
+    `;
+  }
+
+  return `
+    <div>
+      <label>${escapeHtml(label)} ${required ? "*" : ""}</label>
+      ${inputHtml}
+      ${help ? `<div class="muted" style="margin-top:6px;">${escapeHtml(help)}</div>` : ""}
+    </div>
+  `;
+}
+
+function formToInput(formEl) {
+  const fd = new FormData(formEl);
+  const input = {};
+  for (const [k, v] of fd.entries()) {
+    input[k] = v;
+  }
+
+  // basic number coercion (only when it cleanly parses)
+  for (const key of Object.keys(input)) {
+    const val = input[key];
+    if (typeof val === "string" && val !== "" && !isNaN(val)) {
+      const n = Number(val);
+      if (String(n) === val || String(n) === val.trim()) input[key] = n;
+    }
+  }
+  return input;
+}
+
+function renderStepsTable(steps) {
+  if (!steps || !steps.length) return "<div class='muted'>No steps.</div>";
+  const rows = steps.map(s => `
+    <tr>
+      <td>${s.seq}</td>
+      <td>${escapeHtml(s.step_name)}</td>
+      <td><span class="pill ${s.status==='completed'?'ok':(s.status==='failed'?'bad':'')}">${escapeHtml(s.status)}</span></td>
+      <td>${s.duration_ms ?? ""}</td>
+      <td><code>${escapeHtml(pretty(s.data || {}))}</code></td>
+    </tr>
+  `).join("");
+  return `
+    <table>
+      <thead>
+        <tr><th>#</th><th>Step</th><th>Status</th><th>ms</th><th>Data</th></tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+function renderStepper(stepOutline, stepLabels, executedSteps) {
+  const statusByName = {};
+  (executedSteps || []).forEach(s => { statusByName[s.step_name] = s.status; });
+
+  const nodes = (stepOutline || []).map(name => {
+    const st = statusByName[name] || "pending";
+    const cls = st === "completed" ? "done" : (st === "failed" ? "fail" : (st === "running" ? "run" : ""));
+    const label = (stepLabels && stepLabels[name]) ? stepLabels[name] : name;
+    return `<div class="node ${cls}" title="${escapeHtml(name)}">${escapeHtml(label)}</div>`;
+  }).join("");
+
+  return `<div class="stepper">${nodes || "<div class='muted'>No step outline defined.</div>"}</div>`;
+}
+
+async function loadTemplates() {
+  return await fetchJson("/workflows/templates");
+}
+
+async function loadTemplateDetails(name) {
+  return await fetchJson(`/workflows/templates/${encodeURIComponent(name)}`);
+}
+
+async function refreshTemplateUI() {
+  el("uiError").textContent = "";
+  el("outputJson").textContent = "{}";
+  el("errorBox").textContent = "";
+  el("stepsTable").innerHTML = "<div class='muted'>Run the workflow to see steps.</div>";
+  el("runSummary").textContent = "";
+
+  const name = el("templateSelect").value;
+  const t = await loadTemplateDetails(name);
+
+  el("templateMeta").innerHTML = `
+    <div><b>${escapeHtml(t.display_name)}</b> <span class="pill">v${escapeHtml(t.version||"")}</span></div>
+    <div class="muted" style="margin-top:6px;">${escapeHtml(t.description||"")}</div>
+    <div class="muted" style="margin-top:6px;">Category: ${escapeHtml(t.category||"")}</div>
+  `;
+
+  const bizSummary = t.business_summary || "";
+  const bizSteps = t.business_steps || [];
+  el("workflowOverview").innerHTML = `
+    <div><b>What it does</b></div>
+    <div class="muted" style="margin-top:6px;">${escapeHtml(bizSummary)}</div>
+    <div style="margin-top:10px;"><b>High-level steps</b></div>
+    <ol style="margin:6px 0 0 0; padding-left:18px;">
+      ${bizSteps.map(s => `<li class="muted">${escapeHtml(s)}</li>`).join("")}
+    </ol>
+  `;
+
+  const form = el("dynamicForm");
+  const schema = t.input_schema || [];
+  form.innerHTML = schema.map(renderField).join("");
+
+  // initial progress bar (no run yet)
+  el("progressBar").innerHTML = renderStepper(t.step_outline || [], t.step_labels || {}, []);
+}
+
+async function pollRunSteps(runId, templateName) {
+  const t = await loadTemplateDetails(templateName);
+
+  for (let i = 0; i < 10; i++) { // 10 polls = ~10 seconds
+    const run = await fetchJson(`/workflows/runs/${runId}`);
+    const steps = await fetchJson(`/workflows/runs/${runId}/steps`);
+
+    el("stepsTable").innerHTML = renderStepsTable(steps);
+    el("progressBar").innerHTML = renderStepper(t.step_outline || [], t.step_labels || {}, steps);
+
+    const statusCls = run.status === "completed" ? "ok" : (run.status === "failed" ? "bad" : "");
+    el("runSummary").innerHTML = `
+      <div>Status: <span class="pill ${statusCls}">${escapeHtml(run.status)}</span></div>
+      <div class="muted" style="margin-top:6px;">Run ID: ${run.id} · Duration: ${(run.metrics && run.metrics.duration_ms) ?? ""} ms · Progress: ${(run.metrics && run.metrics.progress_pct) ?? ""}%</div>
+    `;
+
+    // Keep output/error in sync too
+    el("outputJson").textContent = pretty(run.output || {});
+    el("errorBox").textContent = run.error || "";
+
+    if (run.status === "completed" || run.status === "failed") break;
+    await new Promise(res => setTimeout(res, 1000));
+  }
+}
+
+async function runSelectedTemplate() {
+  el("uiError").textContent = "";
+  el("errorBox").textContent = "";
+  el("outputJson").textContent = "{}";
+  el("stepsTable").innerHTML = "<div class='muted'>Running…</div>";
+  el("runSummary").textContent = "Running…";
+
+  const runBtn = el("runBtn");
+  runBtn.disabled = true;
+
+  try {
+    const templateName = el("templateSelect").value;
+    const input = formToInput(el("dynamicForm"));
+
+    const run = await fetchJson(`/workflows/run/${encodeURIComponent(templateName)}`, {
+      method: "POST",
+      headers: {"Content-Type":"application/json", "accept":"application/json"},
+      body: JSON.stringify({input})
+    });
+
+    // immediate summary (then polling updates it)
+    const statusCls = run.status === "completed" ? "ok" : (run.status === "failed" ? "bad" : "");
+    el("runSummary").innerHTML = `
+      <div>Status: <span class="pill ${statusCls}">${escapeHtml(run.status)}</span></div>
+      <div class="muted" style="margin-top:6px;">Run ID: ${run.id} · Duration: ${(run.metrics && run.metrics.duration_ms) ?? ""} ms · Progress: ${(run.metrics && run.metrics.progress_pct) ?? ""}%</div>
+    `;
+
+    el("outputJson").textContent = pretty(run.output || {});
+    if (run.error) el("errorBox").textContent = run.error;
+
+    await pollRunSteps(run.id, templateName);
+
+  } catch (err) {
+    el("uiError").textContent = `Run failed: (${err.status||""}) ${err.message}`;
+  } finally {
+    runBtn.disabled = false;
+  }
+}
+
+(async function init() {
+  try {
+    const templates = await loadTemplates();
+    const sel = el("templateSelect");
+    sel.innerHTML = templates.map(t =>
+      `<option value="${escapeHtml(t.name)}">${escapeHtml(t.display_name)} (${escapeHtml(t.name)})</option>`
+    ).join("");
+
+    sel.addEventListener("change", () => refreshTemplateUI().catch(err => {
+      el("uiError").textContent = `Template load failed: (${err.status||""}) ${err.message}`;
+    }));
+
+    el("runBtn").addEventListener("click", (e) => {
+      e.preventDefault();
+      runSelectedTemplate();
+    });
+
+    await refreshTemplateUI();
+  } catch (err) {
+    el("uiError").textContent = `UI init failed: (${err.status||""}) ${err.message}`;
+  }
+})();
+</script>
+</body>
+</html>

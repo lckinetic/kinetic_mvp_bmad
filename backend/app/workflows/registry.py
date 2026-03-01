@@ -32,6 +32,7 @@ class WorkflowDefinition(TypedDict, total=False):
     category: str
     input_schema: list[InputField]
     version: str
+    step_labels: dict[str, str]
     function: WorkflowFn
 
     # UI / business metadata (optional)
@@ -54,6 +55,7 @@ def register(
     business_summary: str = "",
     business_steps: list[str] | None = None,
     step_outline: list[str] | None = None,
+    step_labels: dict[str, str] | None = None,
 ):
     def decorator(fn: WorkflowFn):
         WORKFLOW_TEMPLATES[name] = {
@@ -66,6 +68,7 @@ def register(
             "business_summary": business_summary,
             "business_steps": business_steps or [],
             "step_outline": step_outline or [],
+            "step_labels": step_labels or {},
             "function": fn,
         }
         return fn
