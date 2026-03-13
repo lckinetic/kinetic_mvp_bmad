@@ -36,3 +36,7 @@ Thumbs.db
 # === Docker ===
 *.pid
 GITIGNORE
+
+*.egg-info
+__pycache__/
+.venv/
