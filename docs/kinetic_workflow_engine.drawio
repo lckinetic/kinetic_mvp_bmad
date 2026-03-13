@@ -1,0 +1,30 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="Kinetic Workflow Engine">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10">
+      <root>
+        <mxCell id="0"/><mxCell id="1" parent="0"/>
+
+        <mxCell id="title" value="Kinetic Workflow Engine" style="text;html=1;fontSize=20;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="20" y="20" width="400" height="40" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="runner" value="runner.py&#10;Execute workflow templates" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="200" y="140" width="240" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="metrics" value="metrics.py&#10;Execution metrics" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="480" y="140" width="240" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="steps" value="workflow_steps.py&#10;Step tracking" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="340" y="260" width="240" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="templates" value="Workflow Templates" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="340" y="380" width="240" height="80" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
