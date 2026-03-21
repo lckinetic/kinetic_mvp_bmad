@@ -16,30 +16,107 @@ This is a **fast, reliable, demoable MVP**.
 
 ---
 
-## 2. Core MVP Principles (Non-Negotiable)
+# Kinetic MVP — AI-Powered Workflow Automation for Crypto Operations
 
-1. **Local-first development**
-   - No AWS hosting yet
-   - Everything runs locally via Docker + FastAPI
+Kinetic is an AI-assisted workflow automation platform that enables fintechs and treasury teams to build and execute crypto workflows across multiple providers.
 
-2. **Deterministic runtime**
-   - No LLMs or AI agents in production request handling
-   - Runtime logic must be predictable and testable
-
-3. **AI agents are the dev team, not the runtime**
-   - Agents help write code, tests, tickets, reviews
-   - Agents do *not* make runtime decisions
-
-4. **Single backend service**
-   - One FastAPI app
-   - One Postgres database
-   - No microservices, no queues, no platform engine (yet)
-
-5. **Mock-first integrations**
-   - `MOCK_MODE=true` enables simulated Banxa / wallet flows
-   - Same code paths for mock and real APIs
+This MVP demonstrates:
+- Prebuilt workflow execution
+- AI-generated workflows from natural language
+- Unified execution engine with step tracking and metrics
+- Modular adapter-based architecture
 
 ---
+
+## 🚀 Key Features
+
+### 1. Prebuilt Workflows
+Users can select predefined templates such as:
+- Treasury Rebalance (Onramp → Offramp)
+- Managed Crypto Treasury (Wallet → Trade → Withdraw)
+
+### 2. AI Workflow Generation
+Users can describe a workflow in natural language:
+> “Buy BTC and withdraw to wallet”
+
+Kinetic will:
+- interpret intent
+- generate a workflow graph
+- allow user to review/edit
+- execute it end-to-end
+
+### 3. Editable Workflows
+Generated workflows are fully editable before execution, enabling:
+- parameter tuning
+- flow customisation
+- safe execution control
+
+### 4. Step-Level Execution Tracking
+Every workflow run includes:
+- step-by-step status
+- duration metrics
+- detailed payload logs
+
+---
+
+## 🧠 Architecture Overview
+
+Kinetic follows a **Modular Monolith with Adapter Pattern**:
+
+- **UI Layer**: HTML + JS pages (`/ui`, `/ui/ai`)
+- **API Layer**: FastAPI endpoints (`/workflows`, `/ai`)
+- **Engine Layer**:
+  - Template runner (prebuilt workflows)
+  - Graph runner (AI workflows)
+- **Adapter Layer**:
+  - Banxa (onramp/offramp)
+  - Privy (wallet)
+  - Coinbase (trade, balance, withdraw)
+- **Persistence Layer**:
+  - WorkflowRun
+  - WorkflowStep
+
+---
+
+## 🧩 Project Structure
+
+app/
+api/              # FastAPI routes
+ai/               # Interpreter + schemas
+engine/           # Workflow + graph execution
+workflows/        # Prebuilt workflow templates
+adapters/         # External provider integrations
+services/         # Legacy / domain services
+db/               # Models and engine
+ui/               # HTML UI pages
+
+---
+
+## 🔌 API Endpoints
+
+### Workflows
+- `GET /workflows/templates`
+- `POST /workflows/run/{template_name}`
+- `GET /workflows/runs/{id}`
+- `GET /workflows/runs/{id}/steps`
+
+### AI
+- `POST /ai/interpret`
+- `POST /ai/run-graph`
+
+---
+
+## 🖥 UI Pages
+
+- `/ui` → Prebuilt workflow runner
+- `/ui/ai` → AI workflow generator
+
+---
+
+## ⚙️ Running Locally
+
+```bash
+uvicorn app.main:app --reload
 
 ## 3. MVP Scope (What We Are Building)
 
@@ -191,3 +268,6 @@ http://127.0.0.1:8000/onramp/create
 
 # Onramp
 http://127.0.0.1:8000/onramp/create
+
+http://127.0.0.1:8000/ui
+http://127.0.0.1:8000/ui/ai
