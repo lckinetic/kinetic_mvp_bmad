@@ -9,3 +9,8 @@ templates = Jinja2Templates(directory="app/ui/templates")
 @router.get("/ui", response_class=HTMLResponse)
 def ui_home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
+
+
+@router.get("/ui/ai", response_class=HTMLResponse)
+def ui_ai(request: Request):
+    return templates.TemplateResponse("ai.html", {"request": request})

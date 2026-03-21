@@ -1,0 +1,411 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Kinetic AI Workflow Generator</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; }
+    .wrap { display: grid; grid-template-columns: 420px 1fr; height: 100vh; }
+    .panel { padding: 16px; border-right: 1px solid #eee; overflow: auto; }
+    .main { padding: 16px; overflow: auto; }
+    h2, h3 { margin: 0 0 10px 0; }
+    textarea {
+      width: 100%;
+      min-height: 140px;
+      padding: 10px;
+      box-sizing: border-box;
+      resize: vertical;
+      font-family: inherit;
+    }
+    button {
+      margin-top: 12px;
+      padding: 10px 12px;
+      cursor: pointer;
+    }
+    button[disabled] {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .muted { color: #666; font-size: 13px; }
+    .pill {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #eee;
+      font-size: 12px;
+    }
+    .ok { background: #e6ffed; }
+    .bad { background: #ffe6e6; }
+    .warn { background: #fff7d6; }
+    pre {
+      background: #f7f7f7;
+      padding: 12px;
+      overflow: auto;
+      border-radius: 8px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    th, td {
+      border-bottom: 1px solid #eee;
+      padding: 8px;
+      text-align: left;
+      vertical-align: top;
+      font-size: 13px;
+    }
+    .step-box {
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 10px;
+      background: #fafafa;
+    }
+    .top-nav {
+      margin-bottom: 14px;
+    }
+    .top-nav a {
+      color: inherit;
+      text-decoration: none;
+    }
+    .example-btn {
+    display: inline-block;
+    margin: 6px 6px 0 0;
+    padding: 6px 10px;
+    border: 1px solid #ddd;
+    border-radius: 999px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 12px;
+    }
+    .example-btn:hover {
+    background: #f7f7f7;
+    }
+    .step-card {
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 10px;
+    background: #fafafa;
+    }
+    .step-title {
+    font-weight: 600;
+    margin-bottom: 6px;
+    }
+    .workflow-card {
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    padding: 14px;
+    background: #fafafa;
+    }
+    .workflow-card-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    }
+    .workflow-badges {
+    margin-top: 10px;
+    }
+    .workflow-badges .pill {
+    margin-right: 6px;
+    margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="panel">
+      <div class="top-nav">
+        <a href="/ui" class="muted">← Back to workflow runner</a>
+      </div>
+
+      <h2>AI Workflow Generator</h2>
+      <div class="muted">
+        Describe the financial workflow you want. Kinetic will suggest a workflow graph that you can review and run.
+      </div>
+
+      <h3 style="margin-top:18px;">Your request</h3>
+      <textarea id="promptInput" placeholder="Describe your workflow request..."></textarea>
+
+     <div style="margin-top:10px;">
+        <div class="muted">Try an example:</div>
+        <button type="button" class="example-btn" onclick="setExamplePrompt('Buy BTC and withdraw to wallet')">Buy BTC and withdraw</button>
+        <button type="button" class="example-btn" onclick="setExamplePrompt('Create a wallet for me')">Create wallet only</button>
+    </div>
+
+      <button id="generateBtn">Generate workflow</button>
+      <button id="runBtn" disabled>Run generated workflow</button>
+
+      <div id="uiError" style="margin-top:12px; color:#b00;"></div>
+    </div>
+
+    <div class="main">
+      <h3 style="margin-top:18px;">Suggested Workflow</h3>
+      <div id="workflowCard" class="muted">No suggestion yet.</div>
+      <h3 style="margin-top:18px;">Workflow Summary</h3>
+      <div id="workflowSummary" class="muted">No workflow generated yet.</div>
+
+      <h3 style="margin-top:18px;">Generated Steps</h3>
+      <div id="generatedSteps" class="muted">No steps yet.</div>
+
+      <h3 style="margin-top:18px;">Generated JSON (editable)</h3>
+      <textarea id="workflowJson" style="width:100%; min-height:260px; box-sizing:border-box; font-family: monospace;">{}</textarea>
+
+      <h3 style="margin-top:18px;">Run Result</h3>
+      <div id="runSummary" class="muted">Nothing executed yet.</div>
+
+      <h3 style="margin-top:18px;">Execution Steps</h3>
+      <div id="runSteps" class="muted">No run yet.</div>
+
+      <h3 style="margin-top:18px;">Execution Output</h3>
+      <pre id="runOutput">{}</pre>
+    </div>
+  </div>
+
+  <script>
+    const el = (id) => document.getElementById(id);
+
+    let currentWorkflow = null;
+
+    function escapeHtml(s) {
+      return String(s)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function pretty(obj) {
+      return JSON.stringify(obj, null, 2);
+    }
+
+    function setExamplePrompt(text) {
+    el("promptInput").value = text;
+    }
+
+    async function fetchJson(path, opts = {}) {
+      const res = await fetch(path, opts);
+      const txt = await res.text();
+
+      let data = null;
+      try {
+        data = txt ? JSON.parse(txt) : null;
+      } catch (e) {}
+
+      if (!res.ok) {
+        const msg = (data && data.detail) ? data.detail : (txt || res.statusText);
+        const err = new Error(msg);
+        err.status = res.status;
+        err.data = data;
+        throw err;
+      }
+
+      return data;
+    }
+
+    function renderWorkflowSummary(workflow) {
+      el("workflowSummary").innerHTML = `
+        <div><b>${escapeHtml(workflow.workflow_name || "generated_workflow")}</b></div>
+        <div class="muted" style="margin-top:6px;">${escapeHtml(workflow.business_summary || "")}</div>
+      `;
+    }
+
+    function renderGeneratedSteps(workflow) {
+    const steps = workflow.steps || [];
+    if (!steps.length) {
+        el("generatedSteps").innerHTML = "<div class='muted'>No generated steps.</div>";
+        return;
+    }
+
+    el("generatedSteps").innerHTML = steps.map((step, idx) => `
+        <div class="step-card">
+        <div class="step-title">Step ${idx + 1}: ${escapeHtml(step.type || "")}</div>
+        <div class="muted">ID: ${escapeHtml(step.id || "")}</div>
+        <pre style="margin-top:8px;">${escapeHtml(pretty(step.params || {}))}</pre>
+        </div>
+    `).join("");
+    }
+    
+    function statusPillClass(status) {
+    const s = (status || "").toLowerCase();
+    if (s === "completed") return "ok";
+    if (s === "failed") return "bad";
+    if (s === "running") return "warn";
+    return "";
+    }
+
+    function toggleStepDetails(rowId) {
+    const row = document.getElementById(rowId);
+    if (!row) return;
+    row.style.display = (row.style.display === "none") ? "table-row" : "none";
+    }
+
+    function renderRunSteps(steps) {
+    if (!steps || steps.length === 0) {
+        return "<div class='muted'>No execution steps yet.</div>";
+    }
+
+    return `
+        <table>
+        <thead>
+            <tr>
+            <th style="width:60px;">#</th>
+            <th>Step</th>
+            <th style="width:120px;">Status</th>
+            <th style="width:100px;">Duration</th>
+            <th style="width:80px;">Details</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${steps.map((s, idx) => {
+            const rowId = `aiStepDetails_${idx}`;
+            const payload = {
+                data: s.data || {},
+                error: s.error || null,
+                started_at: s.started_at || null,
+                ended_at: s.ended_at || null,
+                duration_ms: s.duration_ms ?? null,
+            };
+
+            return `
+                <tr>
+                <td>${escapeHtml(String(s.seq ?? idx + 1))}</td>
+                <td>${escapeHtml(s.step_name || "")}</td>
+                <td><span class="pill ${statusPillClass(s.status)}">${escapeHtml(s.status || "")}</span></td>
+                <td class="muted">${escapeHtml(String(s.duration_ms ?? ""))}${s.duration_ms != null ? " ms" : ""}</td>
+                <td><button type="button" onclick="toggleStepDetails('${rowId}')">View</button></td>
+                </tr>
+                <tr id="${rowId}" style="display:none;">
+                <td colspan="5">
+                    <pre>${escapeHtml(pretty(payload))}</pre>
+                </td>
+                </tr>
+            `;
+            }).join("")}
+        </tbody>
+        </table>
+    `;
+    }
+
+    function renderWorkflowCard(workflow) {
+    const steps = workflow.steps || [];
+    const componentTypes = [...new Set(steps.map(s => s.type).filter(Boolean))];
+
+    el("workflowCard").innerHTML = `
+        <div class="workflow-card">
+        <div class="workflow-card-title">${escapeHtml(workflow.workflow_name || "generated_workflow")}</div>
+        <div class="muted">${escapeHtml(workflow.business_summary || "")}</div>
+
+        <div style="margin-top:10px;">
+            <span class="pill">${steps.length} step${steps.length === 1 ? "" : "s"}</span>
+        </div>
+
+        <div class="workflow-badges">
+            ${componentTypes.map(type => `<span class="pill">${escapeHtml(type)}</span>`).join("")}
+        </div>
+        </div>
+    `;
+    }
+    async function generateWorkflow() {
+      el("workflowCard").innerHTML = "<div class='muted'>No suggestion yet.</div>";
+      el("runSteps").innerHTML = "<div class='muted'>No run yet.</div>";
+      el("uiError").textContent = "";
+      el("runSummary").textContent = "Nothing executed yet.";
+      el("runOutput").textContent = "{}";
+
+      const message = el("promptInput").value.trim();
+      if (!message) {
+        el("uiError").textContent = "Please enter a request first.";
+        return;
+      }
+
+      const generateBtn = el("generateBtn");
+      generateBtn.disabled = true;
+
+      try {
+        const workflow = await fetchJson("/ai/interpret", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "accept": "application/json"
+          },
+          body: JSON.stringify({ message })
+        });
+
+        currentWorkflow = workflow;
+
+        renderWorkflowSummary(workflow);
+        renderGeneratedSteps(workflow);
+        renderWorkflowCard(workflow);
+        el("workflowJson").value = pretty(workflow);
+        el("runBtn").disabled = false;
+
+      } catch (err) {
+        el("uiError").textContent = `Generate failed: (${err.status || ""}) ${err.message}`;
+      } finally {
+        generateBtn.disabled = false;
+      }
+    }
+
+    async function runGeneratedWorkflow() {
+      el("runSteps").innerHTML = "<div class='muted'>Running…</div>";
+      el("uiError").textContent = "";
+
+      if (!currentWorkflow) {
+        el("uiError").textContent = "Generate a workflow first.";
+        return;
+      }
+
+      const runBtn = el("runBtn");
+      runBtn.disabled = true;
+
+      let workflowToRun;
+        try {
+        workflowToRun = JSON.parse(el("workflowJson").value);
+        } catch (err) {
+        el("uiError").textContent = "Generated JSON is not valid JSON. Please fix it before running.";
+        return;
+        }
+
+      try {
+        const result = await fetchJson("/ai/run-graph", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "accept": "application/json"
+          },
+          body: JSON.stringify({ workflow: workflowToRun })
+        });
+
+        const statusCls =
+          result.status === "completed" ? "ok" :
+          result.status === "failed" ? "bad" : "warn";
+
+        el("runSummary").innerHTML = `
+          <div>Status: <span class="pill ${statusCls}">${escapeHtml(result.status || "")}</span></div>
+          <div class="muted" style="margin-top:6px;">
+            Run ID: ${escapeHtml(result.id || "")}
+            · Duration: ${escapeHtml((result.metrics && result.metrics.duration_ms) ?? "")} ms
+            · Progress: ${escapeHtml((result.metrics && result.metrics.progress_pct) ?? "")}%
+          </div>
+          ${result.error ? `<div style="margin-top:8px; color:#b00;"><b>Error:</b> ${escapeHtml(result.error)}</div>` : ""}
+        `;
+
+        el("runOutput").textContent = pretty(result.output || result);
+
+        // fetch and render execution steps
+        const steps = await fetchJson(`/workflows/runs/${result.id}/steps`);
+        el("runSteps").innerHTML = renderRunSteps(steps);
+
+      } catch (err) {
+        el("uiError").textContent = `Run failed: (${err.status || ""}) ${err.message}`;
+      } finally {
+        runBtn.disabled = false;
+      }
+    }
+
+    el("generateBtn").addEventListener("click", generateWorkflow);
+    el("runBtn").addEventListener("click", runGeneratedWorkflow);
+  </script>
+</body>
+</html>
