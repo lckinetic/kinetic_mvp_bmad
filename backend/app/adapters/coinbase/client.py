@@ -21,16 +21,13 @@ class CoinbaseTrade:
 class CoinbaseClient:
     """
     Mock Coinbase adapter (MVP version).
-    Later this will wrap real Coinbase Advanced Trade / Prime APIs.
+    Later this will wrap real Coinbase APIs.
     """
 
     def __init__(self, *, mock_mode: bool = True):
         self.mock_mode = mock_mode
 
     def place_trade(self, *, symbol: str, side: Side, amount: float) -> CoinbaseTrade:
-        """
-        Execute a mock trade.
-        """
         trade_id = f"cb_trade_{uuid.uuid4().hex[:12]}"
         return CoinbaseTrade(
             trade_id=trade_id,
@@ -38,11 +35,22 @@ class CoinbaseClient:
             side=side,
             amount=float(amount),
             status="filled",
-            price=50000.0 if symbol.startswith("BTC") else None,  # optional demo price
+            price=50000.0 if symbol.startswith("BTC") else None,
         )
 
-    def get_balance(self, *, asset: str = "USD") -> dict:
-        """
-        Optional helper if you later want balance.check to be real instead of hardcoded.
-        """
-        return {"asset": asset, "available": 1000.0}
+    def get_balance(self) -> dict:
+        return {
+            "USD": 1000.0,
+            "BTC": 0.25,
+            "ETH": 1.5,
+        }
+
+    def withdraw_crypto(self, *, amount: float, currency: str, crypto_address: str) -> dict:
+        withdrawal_id = f"cb_withdraw_{uuid.uuid4().hex[:12]}"
+        return {
+            "withdrawal_id": withdrawal_id,
+            "asset": currency,
+            "amount": float(amount),
+            "address": crypto_address,
+            "status": "completed",
+        }

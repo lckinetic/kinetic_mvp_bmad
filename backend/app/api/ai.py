@@ -1,0 +1,98 @@
+from __future__ import annotations
+
+from typing import Any, Dict
+
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel, Field
+from sqlmodel import Session
+
+from app.core.config import Settings, get_settings
+from app.db.engine import get_engine
+from app.db.models import WorkflowRun, utcnow
+
+from app.ai.interpreter import interpret_request
+from app.engine.graph_runner import run_graph
+from app.engine.metrics import compute_run_metrics
+
+from app.services.banxa_client import BanxaClient
+from app.adapters.privy.client import PrivyClient
+from app.adapters.coinbase.client import CoinbaseClient
+
+
+router = APIRouter(prefix="/ai", tags=["ai"])
+
+
+def get_db(settings: Settings = Depends(get_settings)):
+    engine = get_engine(settings)
+    with Session(engine) as session:
+        yield session
+
+
+class InterpretRequest(BaseModel):
+    message: str = Field(..., min_length=1)
+
+
+class RunGraphRequest(BaseModel):
+    workflow: Dict[str, Any]
+
+
+@router.post("/interpret")
+def interpret(req: InterpretRequest):
+    return interpret_request(req.message)
+
+
+@router.post("/run-graph")
+def run_generated_graph(
+    req: RunGraphRequest,
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+):
+    run = WorkflowRun(
+        template_name="generated_workflow",
+        status="running",
+        input=req.workflow,
+        output={},
+        updated_at=utcnow(),
+    )
+    db.add(run)
+    db.commit()
+    db.refresh(run)
+
+    adapters = {
+        "banxa": BanxaClient(mock_mode=settings.mock_mode),
+        "privy": PrivyClient(mock_mode=settings.mock_mode),
+        "coinbase": CoinbaseClient(mock_mode=settings.mock_mode),
+    }
+
+    try:
+        output = run_graph(
+            db=db,
+            settings=settings,
+            adapters=adapters,
+            run_id=run.id,
+            workflow=req.workflow,
+        )
+        run.status = "completed"
+        run.output = output
+        run.updated_at = utcnow()
+
+    except Exception as e:
+        run.status = "failed"
+        run.error = f"{type(e).__name__}: {e}"
+        run.updated_at = utcnow()
+
+    db.add(run)
+    db.commit()
+    db.refresh(run)
+
+    return {
+        "id": run.id,
+        "template_name": run.template_name,
+        "status": run.status,
+        "input": run.input or {},
+        "output": run.output or {},
+        "error": run.error,
+        "created_at": run.created_at.isoformat() if run.created_at else None,
+        "updated_at": run.updated_at.isoformat() if run.updated_at else None,
+        "metrics": compute_run_metrics(db, run),
+    }
