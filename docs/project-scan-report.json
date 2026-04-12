@@ -1,0 +1,64 @@
+{
+  "workflow_version": "1.2.0",
+  "timestamps": {
+    "started": "2026-04-12T00:00:00.000Z",
+    "last_updated": "2026-04-12T00:00:00.000Z",
+    "completed": "2026-04-12T00:00:00.000Z"
+  },
+  "mode": "initial_scan",
+  "scan_level": "deep",
+  "project_root": "/Users/leonachen/Documents/kinetic-mvp-bmad",
+  "project_knowledge": "/Users/leonachen/Documents/kinetic-mvp-bmad/docs",
+  "completed_steps": [
+    {
+      "step": "bmad_alignment_bundle",
+      "status": "completed",
+      "timestamp": "2026-04-12T00:00:00.000Z",
+      "summary": "Classified repo as monolith; backend project_type_id=backend; wrote project-context.md, index.md, project-overview.md, source-tree-analysis.md.",
+      "outputs": [
+        "_bmad-output/project-context.md",
+        "docs/index.md",
+        "docs/project-overview.md",
+        "docs/source-tree-analysis.md",
+        "docs/project-scan-report.json"
+      ]
+    }
+  ],
+  "current_step": "completed",
+  "findings": {
+    "project_classification": {
+      "repository_type": "monolith",
+      "parts_count": 1,
+      "primary_language": "Python",
+      "architecture_type": "FastAPI layered services + SQLModel/Postgres"
+    },
+    "technology_stack": [
+      {
+        "part_id": "backend",
+        "tech_summary": "Python 3.11+, FastAPI, Uvicorn, SQLModel, PostgreSQL, pytest/httpx (dev)"
+      }
+    ],
+    "batches_completed": [
+      {
+        "path": "backend/app",
+        "files_scanned": 0,
+        "summary": "Critical paths reviewed (main, config, models, docs principles); not an exhaustive per-file enumeration."
+      }
+    ]
+  },
+  "outputs_generated": [
+    "_bmad-output/project-context.md",
+    "docs/index.md",
+    "docs/project-overview.md",
+    "docs/source-tree-analysis.md",
+    "docs/project-scan-report.json"
+  ],
+  "resume_instructions": "Alignment bundle complete. For a full document-project run (all 12 steps, API inventory, data models), delete or archive this file and re-run the workflow, or choose deep-dive on a specific folder.",
+  "project_types": [
+    {
+      "part_id": "backend",
+      "project_type_id": "backend",
+      "display_name": "Backend API"
+    }
+  ]
+}

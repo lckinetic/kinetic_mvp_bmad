@@ -1,0 +1,72 @@
+# generated: 2026-04-12T12:00:00Z
+# last_updated: 2026-04-12T18:00:00Z
+# project: kinetic-mvp-bmad
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+#
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+
+generated: "2026-04-12T12:00:00Z"
+last_updated: "2026-04-12T18:00:00Z"
+project: kinetic-mvp-bmad
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+  # epic-1 → in-progress on sprint start (2026-04-13); story file exists today only for planning
+  epic-1: backlog
+  1-1-module-boundary-audit-targeted-refactors: ready-for-dev
+  1-2-settings-secrets-hygiene: backlog
+  epic-1-retrospective: optional
+
+  epic-2: backlog
+  2-1-openapi-for-workflow-surfaces: backlog
+  2-2-headless-run-lifecycle: backlog
+  2-3-actionable-api-errors: backlog
+  epic-2-retrospective: optional
+
+  epic-3: backlog
+  3-1-canonical-status-enforcement: backlog
+  3-2-webhook-idempotency-audit: backlog
+  3-3-mock-connector-determinism: backlog
+  epic-3-retrospective: optional
+
+  epic-4: backlog
+  4-1-app-shell-navigation: backlog
+  4-2-template-browse-run-ui: backlog
+  4-3-accessibility-baseline: backlog
+  epic-4-retrospective: optional
+
+  epic-5: backlog
+  5-1-chat-session-proposal: backlog
+  5-2-confirm-before-execute: backlog
+  5-3-ui-handoff: backlog
+  epic-5-retrospective: optional
+
+  epic-6: backlog
+  6-1-run-inspection-ui-api: backlog
+  6-2-onboarding-documentation: backlog
+  epic-6-retrospective: optional
+
+  epic-7: backlog
+  7-1-compose-stack-for-app-db: backlog
+  7-2-ci-smoke-for-workflow-api: backlog
+  epic-7-retrospective: optional
