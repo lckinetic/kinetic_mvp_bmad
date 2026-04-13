@@ -1,7 +1,7 @@
 ---
 story_key: 1-1-module-boundary-audit-targeted-refactors
 epic: 1
-status: ready-for-dev
+status: done
 sprint: 1
 story_prepared_on: '2026-04-12'
 implementation_do_not_start_before: '2026-04-13'
@@ -12,9 +12,7 @@ scheduled_kickoff_iso: '2026-04-13T09:00:00+02:00'
 
 # Story 1.1: Module boundary audit & targeted refactors
 
-Status: **ready-for-dev** (prepared for pickup). **Scheduled dev kickoff:** **2026-04-13, 09:00** in **Europe/Berlin** (Central European **summer** time, **CEST**, `+02:00` — common “CET” wall-clock in April). **No implementation before that instant** unless you change this file.
-
-_Add a calendar reminder yourself: this repo cannot trigger alarms. Use ISO **2026-04-13T09:00:00+02:00** or “9:00 Europe/Berlin” in your calendar app._
+Status: **done** — story 1.1 completed after BMAD code review (2026-04-13). (Original planned kickoff was **2026-04-13, 09:00 Europe/Berlin**; work started early on **2026-04-12** per team go-ahead.)
 
 ## Story
 
@@ -29,11 +27,11 @@ So that **changes stay localized** and reviewers can enforce layering.
 
 ## Tasks / subtasks
 
-- [ ] **Audit** (AC: 1) — Map imports from `backend/app/api/**/*.py` to `app.adapters`, `app.services`, `app.engine`, `app.db` (spreadsheet or bullet list in PR / story update).
-- [ ] **Known issue** — `app/api/ai.py` currently imports `PrivyClient`, `CoinbaseClient` from `app.adapters.*` [verify at implementation time]. Decide: **move construction/usage behind services** or **document as time-boxed exception** with removal ticket.
-- [ ] **Refactor** — Apply **minimal** refactors to meet AC (avoid unrelated cleanups).
-- [ ] **Document** — Add **`docs/ai/layering.md`** or **`docs/architecture-layers.md`** (your choice of name) with: allowed edges (API→services→adapters→…), forbidden edges, exceptions table.
-- [ ] **Link** — Add a pointer from `architecture.md` (planning artifact) to the doc above.
+- [x] **Audit** (AC: 1) — Map imports from `backend/app/api/**/*.py` to `app.adapters`, `app.services`, `app.engine`, `app.db` (spreadsheet or bullet list in PR / story update).
+- [x] **Known issue** — `app/api/ai.py` previously imported `PrivyClient`, `CoinbaseClient` from `app.adapters.*`. **Resolved:** thin re-exports under `app.services` (same pattern as `banxa_client.py`).
+- [x] **Refactor** — Apply **minimal** refactors to meet AC (avoid unrelated cleanups).
+- [x] **Document** — Added **`docs/architecture-layers.md`** with allowed edges, forbidden edges, exceptions table, and pytest guard reference.
+- [x] **Link** — Pointer from `_bmad-output/planning-artifacts/architecture.md` §3 to `docs/architecture-layers.md`.
 
 ## Dev notes
 
@@ -44,7 +42,17 @@ Align runtime code with [Source: `docs/ai/architecture-principles.md` §1] and [
 ### Initial findings (audit starting point)
 
 - Several API modules use **services** and **db** appropriately (`onramp.py`, `offramp.py`, `webhooks.py`).
-- **`app/api/ai.py`** imports **`app.adapters.privy.client`** and **`app.adapters.coinbase.client`** directly—likely **primary refactor target** or **documented exception**.
+- **`app/api/ai.py`** was the **only** API module importing **`app.adapters.*`** directly (addressed in this story).
+
+### Final audit — `backend/app/api/**/*.py` (post-change)
+
+| Module | `app.adapters` | `app.services` | `app.engine` | `app.db` | `app.ai` / other |
+|--------|----------------|----------------|--------------|----------|------------------|
+| `ai.py` | **none** | banxa, coinbase, privy clients | graph_runner, metrics | engine, models | interpreter |
+| `onramp.py` | none | banxa_client, onramp_service | — | engine, models | — |
+| `offramp.py` | none | banxa_client, offramp_service | — | engine, models | — |
+| `webhooks.py` | none | — | — | engine, models | — |
+| `workflows.py` | none | — | metrics, runner | engine, models | `app.workflows` |
 
 ### Testing
 
@@ -59,10 +67,35 @@ Align runtime code with [Source: `docs/ai/architecture-principles.md` §1] and [
 
 ### Agent model used
 
-_(filled at dev time)_
+Cursor agent (GPT-5.1)
 
 ### Debug log references
 
+_(none)_
+
 ### Completion notes list
 
+- Sprint 1 kicked off; **epic-1** → `in-progress`; story **1-1** → `review` then **`done`** in `sprint-status.yaml` after code review (2026-04-13).
+- Added `app/services/privy_client.py` and `coinbase_client.py` mirroring `banxa_client.py`; `ai.py` now imports clients only from `app.services`.
+- Added AST-based guard test `app/tests/test_api_layer_no_adapter_imports.py` so CI can catch regressions.
+- Authored `docs/architecture-layers.md` and linked from planning `architecture.md` §3.
+
 ### File list
+
+- `backend/app/api/ai.py`
+- `backend/app/services/privy_client.py`
+- `backend/app/services/coinbase_client.py`
+- `backend/app/tests/test_api_layer_no_adapter_imports.py`
+- `docs/architecture-layers.md`
+- `_bmad-output/planning-artifacts/architecture.md`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
+- `_bmad-output/implementation-artifacts/1-1-module-boundary-audit-targeted-refactors.md`
+
+### Review Findings
+
+- [x] [Review][Defer] AST import guard is syntactic only [`backend/app/tests/test_api_layer_no_adapter_imports.py`] — deferred, pre-existing class of limitation (dynamic/`importlib` / string-based imports are not detected); optional follow-up: `import-linter` or runtime policy tests.
+
+## Change Log
+
+- **2026-04-12** — Story 1-1: API layer free of direct `app.adapters` imports; layering doc + test guard; status → review.
+- **2026-04-13** — BMAD code review (`bmm:workflows:code-review`): no patch or decision items; one deferred limitation noted; status → done.

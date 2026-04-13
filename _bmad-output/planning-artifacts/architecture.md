@@ -34,6 +34,8 @@ _Solution design aligned to `prd.md`. Implementation lives primarily under `back
 
 ## 3. Layering (non-negotiable)
 
+Authoritative import edges and exception process: **`docs/architecture-layers.md`**.
+
 Matches `docs/ai/architecture-principles.md` and PRD:
 
 1. **API** — HTTP models, validation, routing; **no** business rules or raw provider soup.

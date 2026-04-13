@@ -1,5 +1,5 @@
 # generated: 2026-04-12T12:00:00Z
-# last_updated: 2026-04-12T18:00:00Z
+# last_updated: 2026-04-13T12:00:00Z
 # project: kinetic-mvp-bmad
 # project_key: NOKEY
 # tracking_system: file-system
@@ -24,16 +24,15 @@
 #   - done: Retrospective has been completed
 
 generated: "2026-04-12T12:00:00Z"
-last_updated: "2026-04-12T18:00:00Z"
+last_updated: "2026-04-13T12:00:00Z"
 project: kinetic-mvp-bmad
 project_key: NOKEY
 tracking_system: file-system
 story_location: _bmad-output/implementation-artifacts
 
 development_status:
-  # epic-1 → in-progress on sprint start (2026-04-13); story file exists today only for planning
-  epic-1: backlog
-  1-1-module-boundary-audit-targeted-refactors: ready-for-dev
+  epic-1: in-progress
+  1-1-module-boundary-audit-targeted-refactors: done
   1-2-settings-secrets-hygiene: backlog
   epic-1-retrospective: optional
 

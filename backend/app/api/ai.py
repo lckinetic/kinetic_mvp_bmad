@@ -15,8 +15,8 @@ from app.engine.graph_runner import run_graph
 from app.engine.metrics import compute_run_metrics
 
 from app.services.banxa_client import BanxaClient
-from app.adapters.privy.client import PrivyClient
-from app.adapters.coinbase.client import CoinbaseClient
+from app.services.coinbase_client import CoinbaseClient
+from app.services.privy_client import PrivyClient
 
 
 router = APIRouter(prefix="/ai", tags=["ai"])
