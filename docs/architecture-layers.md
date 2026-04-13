@@ -39,3 +39,11 @@ If a temporary exception is required, add a row here and link a follow-up story 
 ```bash
 pytest app/tests/test_api_layer_no_adapter_imports.py -q
 ```
+
+## Secrets & logs (NFR-S1)
+
+Operational rules live in **`docs/ai/architecture-principles.md` §9** and helpers in **`app/core/secrets_redact.py`** / **`app/core/logging.safe_settings_log`**. Run:
+
+```bash
+pytest app/tests/test_secrets_redact.py -q
+```

@@ -7,6 +7,7 @@ from fastapi import HTTPException
 from sqlmodel import Session
 
 from app.core.config import Settings, get_settings
+from app.core.secrets_redact import redact_secrets_in_text
 from app.db.models import WorkflowRun, utcnow
 
 from app.workflows.registry import get_template
@@ -113,7 +114,7 @@ def run_template(
 
     except HTTPException as e:
         run.status = "failed"
-        run.error = str(e.detail)
+        run.error = redact_secrets_in_text(str(e.detail), settings)
         run.updated_at = utcnow()
         db.add(run)
         db.commit()
@@ -122,7 +123,7 @@ def run_template(
 
     except Exception as e:
         run.status = "failed"
-        run.error = f"{type(e).__name__}: {e}"
+        run.error = redact_secrets_in_text(f"{type(e).__name__}: {e}", settings)
         run.updated_at = utcnow()
 
     db.add(run)

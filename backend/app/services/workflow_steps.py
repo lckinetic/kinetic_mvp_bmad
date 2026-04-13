@@ -3,6 +3,8 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 from sqlmodel import Session, select
 
+from app.core.config import get_settings
+from app.core.secrets_redact import redact_secrets_in_text
 from app.db.models import WorkflowStep, utcnow
 
 
@@ -58,7 +60,7 @@ def step_fail(
     if not step:
         raise ValueError("WorkflowStep not found")
     step.status = "failed"
-    step.error = error
+    step.error = redact_secrets_in_text(error, get_settings())
     if data:
         step.data = {**(step.data or {}), **data}
     step.ended_at = utcnow()

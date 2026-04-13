@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from sqlmodel import Session
 
 from app.core.config import Settings, get_settings
+from app.core.secrets_redact import redact_secrets_in_text
 from app.db.engine import get_engine
 from app.db.models import WorkflowRun, utcnow
 
@@ -78,7 +79,7 @@ def run_generated_graph(
 
     except Exception as e:
         run.status = "failed"
-        run.error = f"{type(e).__name__}: {e}"
+        run.error = redact_secrets_in_text(f"{type(e).__name__}: {e}", settings)
         run.updated_at = utcnow()
 
     db.add(run)

@@ -52,3 +52,10 @@ It must be version-controlled under `/postman`.
 - Add guardrails (allowed status set, terminal protection) early
 - Reset local DB is acceptable during MVP; migrations later
 
+## 9) Secrets never in logs or client-visible errors
+- Use `app.core.logging.safe_settings_log` for any dict derived from settings at startup.
+- Use `app.core.secrets_redact.redact_secrets_in_text` before persisting or returning exception text on failure paths (`WorkflowRun.error`, AI run-graph responses, and anywhere else errors leave the process without going through `step_fail`).
+- `app.services.workflow_steps.step_fail` always applies `redact_secrets_in_text` via current `get_settings()` so template workflows cannot persist raw secrets on `WorkflowStep.error`.
+- `DATABASE_URL` must always be logged via `redact_database_url` (password in netloc).
+- When adding new env-backed secrets, extend `Settings` and `_secret_substrings` in `secrets_redact.py` so redaction stays complete.
+

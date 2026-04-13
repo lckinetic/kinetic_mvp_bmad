@@ -94,6 +94,7 @@ Matches `docs/ai/architecture-principles.md` and PRD:
 ## 7. Observability
 
 - **Structured logging** with **run/request correlation** (`NFR-O1`).
+- **Secrets:** startup and persisted errors follow **`docs/ai/architecture-principles.md` §9** and `app.core.secrets_redact` (`NFR-S1`).
 - **Metrics:** Engine step timings—incremental; **no** full APM requirement in MVP PRD.
 
 ## 8. Risks & follow-ups
