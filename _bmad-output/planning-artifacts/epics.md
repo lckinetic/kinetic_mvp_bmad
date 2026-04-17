@@ -163,6 +163,7 @@ So that **tests are stable** (FR24, NFR-I2).
 ## Epic 4: Customer web app
 
 **Goal:** **Maya** journey—author/run in UI; migrate off ad hoc HTML/JS toward **maintainable** stack (FR15–FR18, FR1–FR4 UI path).
+**UX baseline artifact:** `_bmad-output/planning-artifacts/ux-design-epic-4.md` (use this before pixel-level implementation for stories 4.1-4.3).
 
 ### Story 4.1: App shell & navigation
 
