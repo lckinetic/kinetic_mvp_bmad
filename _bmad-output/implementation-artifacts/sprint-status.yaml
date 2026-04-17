@@ -1,5 +1,5 @@
 # generated: 2026-04-12T12:00:00Z
-# last_updated: 2026-04-13T22:10:00Z
+# last_updated: 2026-04-14T01:00:00Z
 # project: kinetic-mvp-bmad
 # project_key: NOKEY
 # tracking_system: file-system
@@ -24,7 +24,7 @@
 #   - done: Retrospective has been completed
 
 generated: "2026-04-12T12:00:00Z"
-last_updated: "2026-04-13T22:10:00Z"
+last_updated: "2026-04-14T01:00:00Z"
 project: kinetic-mvp-bmad
 project_key: NOKEY
 tracking_system: file-system
@@ -39,7 +39,7 @@ development_status:
   epic-2: in-progress
   2-1-openapi-for-workflow-surfaces: done
   2-2-headless-run-lifecycle: done
-  2-3-actionable-api-errors: backlog
+  2-3-actionable-api-errors: done
   epic-2-retrospective: optional
 
   epic-3: backlog

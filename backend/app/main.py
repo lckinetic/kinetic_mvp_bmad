@@ -4,6 +4,7 @@ from fastapi import FastAPI
 import logging
 
 from app.core.config import get_settings
+from app.core.errors import register_error_handlers
 from app.core.logging import configure_logging, safe_settings_log
 from app.db.engine import get_engine, create_db_and_tables
 
@@ -47,6 +48,7 @@ def create_app() -> FastAPI:
         yield
 
     app = FastAPI(title="Kinetic MVP API", version="0.1.0", lifespan=lifespan)
+    register_error_handlers(app)
 
     @app.get("/")
     def root():
