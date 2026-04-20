@@ -1,14 +1,14 @@
 ---
 story_key: 3-2-webhook-idempotency-audit
 epic: 3
-status: review
+status: done
 sprint: 1
 story_prepared_on: '2026-04-14'
 ---
 
 # Story 3.2: Webhook idempotency & audit
 
-Status: **review** - webhook idempotency and audit behavior validated and tightened.
+Status: **done** - BMAD code review completed and accepted.
 
 ## Story
 
@@ -73,3 +73,4 @@ Cursor agent (GPT-5.1)
 ## Change Log
 
 - **2026-04-14** - Story 3-2 implemented; status -> review.
+- **2026-04-14** - BMAD code review completed; status -> done.

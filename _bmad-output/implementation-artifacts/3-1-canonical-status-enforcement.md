@@ -1,14 +1,14 @@
 ---
 story_key: 3-1-canonical-status-enforcement
 epic: 3
-status: review
+status: done
 sprint: 1
 story_prepared_on: '2026-04-14'
 ---
 
 # Story 3.1: Canonical status enforcement
 
-Status: **review** - canonical status normalization is now centralized and enforced before persistence.
+Status: **done** - canonical status normalization accepted after review.
 
 ## Story
 
@@ -79,3 +79,4 @@ Cursor agent (GPT-5.1)
 ## Change Log
 
 - **2026-04-14** - Story 3-1 implemented; status -> review.
+- **2026-04-20** - Story 3-1 accepted; status -> done.
