@@ -5,6 +5,7 @@ from sqlmodel import Session, select
 
 from app.db.models import Order, utcnow
 from app.services.banxa_client import BanxaClient
+from app.services.order_status import normalize_order_status_or_default
 
 
 def create_offramp_order(
@@ -48,7 +49,7 @@ def create_offramp_order(
         direction="offramp",
         order_id=result.order_id,
         client_reference=client_reference,
-        order_status=result.status,
+        order_status=normalize_order_status_or_default(result.status),
         user_email=user_email,
         crypto_amount=crypto_amount,
         crypto_currency=crypto_currency,

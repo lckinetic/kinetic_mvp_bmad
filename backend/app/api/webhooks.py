@@ -11,17 +11,11 @@ from sqlmodel import Session, select
 from app.core.config import get_settings, Settings
 from app.db.engine import get_engine
 from app.db.models import WebhookEvent, Order
+from app.services.order_status import CANONICAL_ORDER_STATUSES, normalize_order_status
 
 
 # internal status
-ALLOWED_STATUSES = {
-    "pending",
-    "processing",
-    "completed",
-    "failed",
-    "cancelled",
-}
-
+ALLOWED_STATUSES = CANONICAL_ORDER_STATUSES
 TERMINAL_STATES = {"completed", "failed", "cancelled"}
 
 
@@ -32,29 +26,7 @@ def normalise_status(payload: dict) -> str | None:
     Returns None if no usable status found.
     """
     raw = payload.get("status") or payload.get("order_status") or payload.get("orderStatus")
-    if not raw:
-        return None
-
-    s = str(raw).strip().lower()
-
-    # Lightweight normalisation (expand later if needed)
-    mapping = {
-        "success": "completed",
-        "succeeded": "completed",
-        "complete": "completed",
-        "completed": "completed",
-        "processing": "processing",
-        "in_progress": "processing",
-        "in progress": "processing",
-        "pending": "pending",
-        "failed": "failed",
-        "error": "failed",
-        "cancelled": "cancelled",
-        "canceled": "cancelled",
-    }
-    s = mapping.get(s, s)
-
-    return s if s in ALLOWED_STATUSES else None
+    return normalize_order_status(raw)
 
 
 router = APIRouter(prefix="/webhooks", tags=["webhooks"])

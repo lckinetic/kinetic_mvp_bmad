@@ -1,5 +1,5 @@
 # generated: 2026-04-12T12:00:00Z
-# last_updated: 2026-04-14T01:20:00Z
+# last_updated: 2026-04-14T02:00:00Z
 # project: kinetic-mvp-bmad
 # project_key: NOKEY
 # tracking_system: file-system
@@ -24,7 +24,7 @@
 #   - done: Retrospective has been completed
 
 generated: "2026-04-12T12:00:00Z"
-last_updated: "2026-04-14T01:20:00Z"
+last_updated: "2026-04-14T02:00:00Z"
 project: kinetic-mvp-bmad
 project_key: NOKEY
 tracking_system: file-system
@@ -42,8 +42,8 @@ development_status:
   2-3-actionable-api-errors: done
   epic-2-retrospective: done
 
-  epic-3: backlog
-  3-1-canonical-status-enforcement: backlog
+  epic-3: in-progress
+  3-1-canonical-status-enforcement: review
   3-2-webhook-idempotency-audit: backlog
   3-3-mock-connector-determinism: backlog
   epic-3-retrospective: optional
