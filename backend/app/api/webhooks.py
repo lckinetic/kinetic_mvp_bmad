@@ -6,6 +6,7 @@ import json
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from app.core.config import get_settings, Settings
@@ -116,7 +117,7 @@ async def banxa_webhook(
         db.add(event)
         db.commit()
         db.refresh(event)
-    except Exception:
+    except IntegrityError:
         # likely unique constraint hit (duplicate webhook)
         db.rollback()
         return {"status": "duplicate_ignored", "idempotency_key": idem}
@@ -147,6 +148,10 @@ async def banxa_webhook(
 
                 db.add(order)
                 db.commit()
+
+    event.processed = True
+    db.add(event)
+    db.commit()
 
     return {"status": "received", "idempotency_key": idem}
 
