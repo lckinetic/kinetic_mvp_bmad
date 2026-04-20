@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-import uuid
+import hashlib
 from typing import Literal, Optional
 
 
@@ -26,9 +26,16 @@ class CoinbaseClient:
 
     def __init__(self, *, mock_mode: bool = True):
         self.mock_mode = mock_mode
+        self._mock_seq = 0
+
+    def _next_mock_seq(self) -> int:
+        self._mock_seq += 1
+        return self._mock_seq
 
     def place_trade(self, *, symbol: str, side: Side, amount: float) -> CoinbaseTrade:
-        trade_id = f"cb_trade_{uuid.uuid4().hex[:12]}"
+        seq = self._next_mock_seq()
+        fp = hashlib.sha256(f"trade|{symbol}|{side}|{amount}|{seq}".encode("utf-8")).hexdigest()[:12]
+        trade_id = f"cb_trade_{fp}"
         return CoinbaseTrade(
             trade_id=trade_id,
             symbol=symbol,
@@ -46,7 +53,11 @@ class CoinbaseClient:
         }
 
     def withdraw_crypto(self, *, amount: float, currency: str, crypto_address: str) -> dict:
-        withdrawal_id = f"cb_withdraw_{uuid.uuid4().hex[:12]}"
+        seq = self._next_mock_seq()
+        fp = hashlib.sha256(
+            f"withdraw|{amount}|{currency}|{crypto_address}|{seq}".encode("utf-8")
+        ).hexdigest()[:12]
+        withdrawal_id = f"cb_withdraw_{fp}"
         return {
             "withdrawal_id": withdrawal_id,
             "asset": currency,
