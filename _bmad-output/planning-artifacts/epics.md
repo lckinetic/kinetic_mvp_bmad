@@ -10,7 +10,7 @@ inputDocuments:
 
 ## Overview
 
-Epics decompose `prd.md` **FR1–FR35** and architecture decisions into phased delivery aligned with **Project Scoping** (refactor → engine/API → Docker/polish). **UX design document** is not present; UI stories follow FRs and architecture.
+Epics decompose `prd.md` **FR1–FR35** and architecture decisions into phased delivery aligned with **Project Scoping** (refactor -> engine/API -> Docker/polish). A UX baseline is now available in `_bmad-output/planning-artifacts/ux-design-epic-4.md`, and the UI kit baseline has been imported under `ui_kits/app`.
 
 ## Requirements inventory
 
@@ -33,7 +33,8 @@ NFR-P1–P3 Performance · NFR-S1–S4 Security · NFR-R1–R2 Reliability · NF
 
 ### Additional / UX
 
-- **UX spec:** Not in planning artifacts—**gap** for visual design system; cover with **spike** or follow-on `bmad-create-ux-design`.
+- **UX spec:** Available at `_bmad-output/planning-artifacts/ux-design-epic-4.md`.
+- **UI freeze decision (2026-04-24):** Keep the current `ui_kits/app` implementation as a frozen MVP UI baseline for testing; defer deeper UI integration/polish until backend epics are completed.
 
 ### FR coverage map
 
@@ -54,10 +55,18 @@ NFR-P1–P3 Performance · NFR-S1–S4 Security · NFR-R1–R2 Reliability · NF
 1. **E1 — Platform foundations & refactor** (monolith boundaries, hygiene)  
 2. **E2 — Workflow HTTP API (prebuilts)** (headless parity)  
 3. **E3 — Engine, connectors & webhooks** (execution + integrations)  
-4. **E4 — Customer web app** (React-direction authoring & runs)  
+4. **E4 — Customer web app** (React-direction authoring & runs; currently frozen at UI baseline)  
 5. **E5 — Conversational assistant** (authoring assistance)  
 6. **E6 — Observability, support & documentation**  
 7. **E7 — Docker, local env & release discipline**
+
+### Sprint sequencing update (2026-04-24)
+
+Execution order for the next phase is:
+
+1. Continue backend-heavy delivery with **E5 -> E6 -> E7**
+2. Keep **E4** in maintenance-only mode (blocker fixes for testing only)
+3. Return to full **E4** integration/polish after backend epics stabilize
 
 ---
 
@@ -163,6 +172,7 @@ So that **tests are stable** (FR24, NFR-I2).
 ## Epic 4: Customer web app
 
 **Goal:** **Maya** journey—author/run in UI; migrate off ad hoc HTML/JS toward **maintainable** stack (FR15–FR18, FR1–FR4 UI path).
+**Status note (2026-04-24):** UI baseline is frozen for now (`ui_kits/app/index.html` + imported sibling `.jsx` files). Remaining Epic 4 scope is deferred until backend epics are complete.
 **UX baseline artifact:** `_bmad-output/planning-artifacts/ux-design-epic-4.md` (use this before pixel-level implementation for stories 4.1-4.3).
 
 ### Story 4.1: App shell & navigation
