@@ -1,5 +1,5 @@
 # generated: 2026-04-12T12:00:00Z
-# last_updated: 2026-04-26T14:03:00Z
+# last_updated: 2026-04-26T14:05:00Z
 # project: kinetic-mvp-bmad
 # project_key: NOKEY
 # tracking_system: file-system
@@ -24,7 +24,7 @@
 #   - done: Retrospective has been completed
 
 generated: "2026-04-12T12:00:00Z"
-last_updated: "2026-04-26T14:03:00Z"
+last_updated: "2026-04-26T14:05:00Z"
 project: kinetic-mvp-bmad
 project_key: NOKEY
 tracking_system: file-system
@@ -60,10 +60,10 @@ development_status:
   5-3-ui-handoff: done
   epic-5-retrospective: done
 
-  epic-6: in-progress
+  epic-6: done
   6-1-run-inspection-ui-api: done
   6-2-onboarding-documentation: done
-  epic-6-retrospective: optional
+  epic-6-retrospective: done
 
   epic-7: backlog
   7-1-compose-stack-for-app-db: backlog
