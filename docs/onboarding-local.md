@@ -18,6 +18,20 @@ docker compose -f infra/docker-compose.yml ps
 
 Expected: `postgres` is running and healthy.
 
+## Optional: run API in Docker too (after step 4)
+
+If you want the backend app containerized (instead of running it from `.venv`), run this **after completing step 4** (`backend/.env` must exist):
+
+```bash
+docker compose -f infra/docker-compose.yml --profile app up -d --build
+docker compose -f infra/docker-compose.yml ps
+```
+
+Notes:
+- `app` service reads `backend/.env`.
+- In compose mode, `DATABASE_URL` is automatically pointed to `postgres` service host.
+- App is exposed on `http://127.0.0.1:8000`.
+
 ## 2) Create and activate virtual environment
 
 From repo root:
@@ -62,6 +76,8 @@ From repo root:
 source .venv/bin/activate
 python -m uvicorn app.main:app --reload --app-dir backend
 ```
+
+If you started the `app` compose profile, skip this step.
 
 ## 6) Verify health and docs
 
@@ -118,6 +134,11 @@ python -m pytest backend/app/tests/test_workflows_openapi.py backend/app/tests/t
   - Confirm Postgres container is healthy:
   - `docker compose -f infra/docker-compose.yml ps`
   - Verify `DATABASE_URL` in `backend/.env`.
+
+- **App container exits immediately**
+  - Check logs:
+  - `docker compose -f infra/docker-compose.yml logs app`
+  - Make sure `backend/.env` exists and has required keys.
 
 - **Port 8000 already in use**
   - Stop previous server process or run with a different port:
