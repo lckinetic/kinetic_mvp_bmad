@@ -87,6 +87,14 @@ const MOCK_RUNS = [
   { id: 'run_98f4d0', template: 'managed_treasury', status: 'running', created_at: '2026-04-26T13:59:00Z' },
 ];
 
+const API_BASE = window.KINETIC_API_BASE || '';
+
+async function apiGet(path) {
+  const res = await fetch(`${API_BASE}${path}`);
+  if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+  return res.json();
+}
+
 function readRoute() {
   const route = (window.location.hash || '').replace('#', '').trim();
   return APP_ROUTES.some(r => r.id === route) ? route : 'templates';
@@ -101,7 +109,38 @@ function formatTime(value) {
 }
 
 function TemplatesLanding({ onOpenRunner }) {
+  const [templates, setTemplates] = React.useState(MOCK_TEMPLATES);
   const [selectedTemplate, setSelectedTemplate] = React.useState(MOCK_TEMPLATES[0]);
+  const [loadError, setLoadError] = React.useState('');
+
+  React.useEffect(() => {
+    let cancelled = false;
+    async function loadTemplates() {
+      try {
+        const rows = await apiGet('/workflows/templates');
+        if (!cancelled && Array.isArray(rows) && rows.length) {
+          setTemplates(rows.map(r => ({
+            id: r.name,
+            name: r.display_name || r.name,
+            category: r.category || 'workflow',
+            description: r.business_summary || r.description || 'Workflow template',
+            rawName: r.name,
+          })));
+        }
+      } catch {
+        if (!cancelled) setLoadError('Using local template fallback (API unavailable).');
+      }
+    }
+    loadTemplates();
+    return () => { cancelled = true; };
+  }, []);
+
+  React.useEffect(() => {
+    if (!templates.length) return;
+    const exists = templates.some(t => t.id === selectedTemplate.id);
+    if (!exists) setSelectedTemplate(templates[0]);
+  }, [templates, selectedTemplate.id]);
+
   return (
     <div style={{ padding: 20, display: 'grid', gridTemplateColumns: '360px 1fr', gap: 18, height: '100%', overflow: 'auto' }}>
       <div style={{ background: KColors.raised, border: `1px solid ${KColors.border}`, borderRadius: 10, overflow: 'hidden' }}>
@@ -109,7 +148,7 @@ function TemplatesLanding({ onOpenRunner }) {
           Templates
         </div>
         <div style={{ padding: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {MOCK_TEMPLATES.map(t => (
+          {templates.map(t => (
             <button
               key={t.id}
               onClick={() => setSelectedTemplate(t)}
@@ -137,17 +176,42 @@ function TemplatesLanding({ onOpenRunner }) {
           <div style={{ marginTop: 8, fontSize: 13, color: KColors.fg2, maxWidth: 640 }}>{selectedTemplate.description}</div>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <KButton onClick={onOpenRunner}>Open in runner</KButton>
+          <KButton onClick={() => onOpenRunner(selectedTemplate.rawName || selectedTemplate.id)}>Open in runner</KButton>
           <KButton variant="secondary" onClick={() => { window.location.hash = '#builder'; }}>Edit in builder</KButton>
         </div>
+        {loadError && <div style={{ fontSize: 11, color: KColors.warning }}>{loadError}</div>}
       </div>
     </div>
   );
 }
 
 function RunsLanding() {
+  const [runs, setRuns] = React.useState(MOCK_RUNS);
   const [selectedRunId, setSelectedRunId] = React.useState(MOCK_RUNS[0].id);
-  const selectedRun = MOCK_RUNS.find(r => r.id === selectedRunId) || MOCK_RUNS[0];
+  const [loadError, setLoadError] = React.useState('');
+  const selectedRun = runs.find(r => String(r.id) === String(selectedRunId)) || runs[0];
+
+  React.useEffect(() => {
+    let cancelled = false;
+    async function loadRuns() {
+      try {
+        const rows = await apiGet('/workflows/runs?limit=20');
+        if (!cancelled && Array.isArray(rows) && rows.length) {
+          setRuns(rows.map(r => ({
+            id: r.id,
+            template: r.template_name,
+            status: r.status,
+            created_at: r.created_at,
+            error: r.error || '',
+          })));
+        }
+      } catch {
+        if (!cancelled) setLoadError('Using local run fallback (API unavailable).');
+      }
+    }
+    loadRuns();
+    return () => { cancelled = true; };
+  }, []);
   return (
     <div style={{ padding: 20, display: 'grid', gridTemplateColumns: '380px 1fr', gap: 18, height: '100%', overflow: 'auto' }}>
       <div style={{ background: KColors.raised, border: `1px solid ${KColors.border}`, borderRadius: 10, overflow: 'hidden' }}>
@@ -155,7 +219,7 @@ function RunsLanding() {
           Recent runs
         </div>
         <div style={{ padding: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {MOCK_RUNS.map(run => (
+          {runs.map(run => (
             <button
               key={run.id}
               onClick={() => setSelectedRunId(run.id)}
@@ -192,8 +256,9 @@ function RunsLanding() {
           <strong style={{ color: KColors.fg1 }}>Started:</strong> {formatTime(selectedRun.created_at)}
         </div>
         <div style={{ marginTop: 4, fontSize: 12, color: KColors.fg3 }}>
-          This shell-level run detail keeps list/detail navigation reachable before full Story 4.2 execution UI is wired.
+          {selectedRun?.error ? `Last error: ${selectedRun.error}` : 'Run payload is ready for richer detail integration in Story 4.3+'}
         </div>
+        {loadError && <div style={{ fontSize: 11, color: KColors.warning }}>{loadError}</div>}
       </div>
     </div>
   );
@@ -202,6 +267,7 @@ function RunsLanding() {
 function App() {
   const [page, setPage] = React.useState(readRoute);
   const [templateOpenInRunner, setTemplateOpenInRunner] = React.useState(false);
+  const [runnerTemplateName, setRunnerTemplateName] = React.useState(null);
 
   React.useEffect(() => {
     if (window.lucide) lucide.createIcons();
@@ -223,7 +289,9 @@ function App() {
 
   function navigate(next) {
     setPage(next);
-    if (next !== 'templates') setTemplateOpenInRunner(false);
+    // Any explicit nav click exits runner subview to avoid templates dead-end states.
+    setTemplateOpenInRunner(false);
+    if (next === 'templates') setRunnerTemplateName(null);
   }
 
   const pageMeta = APP_ROUTES.find(r => r.id === page) || APP_ROUTES[0];
@@ -251,8 +319,8 @@ function App() {
         <div style={{ flex: 1, overflow: 'hidden' }}>
           {page === 'templates' ? (
             templateOpenInRunner
-              ? <WorkflowRunner/>
-              : <TemplatesLanding onOpenRunner={() => setTemplateOpenInRunner(true)}/>
+              ? <WorkflowRunner initialTemplateName={runnerTemplateName}/>
+              : <TemplatesLanding onOpenRunner={(name) => { setRunnerTemplateName(name); setTemplateOpenInRunner(true); }}/>
           ) : page === 'runs' ? (
             <RunsLanding/>
           ) : page === 'assistant' ? (

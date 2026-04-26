@@ -54,65 +54,121 @@ const DEFAULT_INPUTS = {
   destination_reference: 'demo-bank-001',
 };
 
-function simulateRun(steps, onStep, onDone) {
-  let i = 0;
-  const statuses = {};
-  steps.forEach(s => { statuses[s] = 'pending'; });
+const API_BASE = window.KINETIC_API_BASE || '';
 
-  function next() {
-    if (i >= steps.length) { onDone('completed', statuses); return; }
-    statuses[steps[i]] = 'running';
-    onStep({ ...statuses });
-    const delay = 600 + Math.random() * 600;
-    setTimeout(() => {
-      statuses[steps[i]] = 'completed';
-      onStep({ ...statuses });
-      i++;
-      setTimeout(next, 200);
-    }, delay);
-  }
-  next();
+async function apiGet(path) {
+  const res = await fetch(`${API_BASE}${path}`);
+  if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+  return res.json();
 }
 
-function WorkflowRunner() {
+async function apiPost(path, body) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+  return res.json();
+}
+
+function WorkflowRunner({ initialTemplateName = null }) {
+  const [templates, setTemplates] = React.useState(TEMPLATES);
   const [selectedTemplate, setSelectedTemplate] = React.useState(TEMPLATES[0]);
   const [inputs, setInputs] = React.useState(DEFAULT_INPUTS);
   const [runState, setRunState] = React.useState('idle'); // idle | running | done
   const [stepStatuses, setStepStatuses] = React.useState({});
   const [stepRows, setStepRows] = React.useState([]);
-  const [runId] = React.useState(() => Math.random().toString(36).slice(2,10));
+  const [runId, setRunId] = React.useState('');
+  const [apiError, setApiError] = React.useState('');
 
   const tmpl = selectedTemplate;
 
-  function handleRun() {
+  React.useEffect(() => {
+    let cancelled = false;
+    async function loadTemplates() {
+      try {
+        const rows = await apiGet('/workflows/templates');
+        if (cancelled || !Array.isArray(rows) || rows.length === 0) return;
+        setTemplates(rows);
+        const preferred = initialTemplateName
+          ? rows.find(t => t.name === initialTemplateName)
+          : null;
+        setSelectedTemplate(preferred || rows[0]);
+      } catch {
+        // Keep deterministic fallback templates when API is unavailable.
+      }
+    }
+    loadTemplates();
+    return () => { cancelled = true; };
+  }, [initialTemplateName]);
+
+  React.useEffect(() => {
+    if (!initialTemplateName) return;
+    const found = templates.find(t => t.name === initialTemplateName);
+    if (found) setSelectedTemplate(found);
+  }, [initialTemplateName, templates]);
+
+  async function loadSteps(run) {
+    try {
+      const rows = await apiGet(`/workflows/runs/${run.id}/steps`);
+      if (Array.isArray(rows) && rows.length) {
+        setStepRows(rows);
+        const statuses = {};
+        rows.forEach(r => { statuses[r.step_name] = r.status; });
+        setStepStatuses(statuses);
+        return;
+      }
+    } catch {
+      // Fall back to summary status.
+    }
+    const fallback = {};
+    (tmpl.step_outline || []).forEach(s => { fallback[s] = run.status === 'failed' ? 'failed' : 'completed'; });
+    setStepStatuses(fallback);
+    setStepRows((tmpl.step_outline || []).map((name, idx) => ({
+      seq: idx + 1,
+      step_name: name,
+      status: fallback[name],
+      duration_ms: null,
+    })));
+  }
+
+  async function handleRun() {
     if (runState === 'running') return;
+    setApiError('');
     setRunState('running');
     const init = {};
-    tmpl.step_outline.forEach(s => { init[s] = 'pending'; });
+    (tmpl.step_outline || []).forEach(s => { init[s] = 'pending'; });
     setStepStatuses(init);
     setStepRows([]);
-
-    const durations = {};
-
-    simulateRun(
-      tmpl.step_outline,
-      (statuses) => {
-        setStepStatuses({ ...statuses });
-        const rows = tmpl.step_outline.map((name, idx) => {
-          const st = statuses[name];
-          if (st === 'completed' && !durations[name]) durations[name] = Math.round(300 + Math.random() * 700);
-          return { seq: idx + 1, step_name: name, status: st, duration_ms: durations[name] ?? null };
-        });
-        setStepRows(rows);
-      },
-      () => {
-        setRunState('done');
-      }
-    );
+    try {
+      const run = await apiPost(`/workflows/run/${tmpl.name}`, { input: inputs });
+      setRunId(String(run.id));
+      await loadSteps(run);
+      setRunState('done');
+    } catch {
+      setApiError('Unable to run workflow API. Showing fallback simulation.');
+      const durations = {};
+      (tmpl.step_outline || []).forEach((name, idx) => {
+        durations[name] = 350 + idx * 120;
+      });
+      const rows = (tmpl.step_outline || []).map((name, idx) => ({
+        seq: idx + 1,
+        step_name: name,
+        status: 'completed',
+        duration_ms: durations[name],
+      }));
+      setStepRows(rows);
+      const statuses = {};
+      rows.forEach(r => { statuses[r.step_name] = r.status; });
+      setStepStatuses(statuses);
+      setRunId(Math.random().toString(36).slice(2, 10));
+      setRunState('done');
+    }
   }
 
   const totalDone = Object.values(stepStatuses).filter(s => s === 'completed').length;
-  const pct = tmpl.step_outline.length ? Math.round((totalDone / tmpl.step_outline.length) * 100) : 0;
+  const pct = (tmpl.step_outline || []).length ? Math.round((totalDone / (tmpl.step_outline || []).length) * 100) : 0;
   const overallStatus = runState === 'idle' ? null : runState === 'running' ? 'running' : 'completed';
 
   return (
@@ -122,10 +178,10 @@ function WorkflowRunner() {
         <div>
           <KSectionLabel>Template</KSectionLabel>
           <KSelect
-            options={TEMPLATES.map(t => ({ value: t.name, label: t.display_name }))}
+            options={templates.map(t => ({ value: t.name, label: t.display_name }))}
             value={tmpl.name}
             onChange={name => {
-              setSelectedTemplate(TEMPLATES.find(t => t.name === name));
+              setSelectedTemplate(templates.find(t => t.name === name));
               setRunState('idle'); setStepStatuses({}); setStepRows([]);
             }}
           />
@@ -156,6 +212,7 @@ function WorkflowRunner() {
         <KButton onClick={handleRun} disabled={runState === 'running'} style={{ width: '100%', justifyContent: 'center' }}>
           {runState === 'running' ? 'Running…' : 'Run workflow'}
         </KButton>
+        {apiError && <div style={{ fontSize: 11, color: KColors.warning }}>{apiError}</div>}
       </div>
 
       {/* Right panel */}
@@ -204,8 +261,8 @@ function WorkflowRunner() {
             <KCodeBlock readOnly value={JSON.stringify({
               template: tmpl.name,
               run_id: runId,
-              status: 'completed',
-              steps: tmpl.step_outline.map(s => ({ step: s, status: 'completed' })),
+              status: overallStatus || 'completed',
+              steps: stepRows.map(s => ({ step: s.step_name, status: s.status })),
             }, null, 2)} minHeight={140}/>
           </div>
         )}
