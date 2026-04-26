@@ -35,29 +35,211 @@
 <script type="text/babel" src="WorkflowBuilder.jsx"></script>
 
 <script type="text/babel">
+const APP_ROUTES = [
+  {
+    id: 'templates',
+    icon: 'layout-template',
+    label: 'Templates',
+    title: 'Template catalog',
+    subtitle: 'Browse curated workflow templates and open the runner.',
+  },
+  {
+    id: 'runs',
+    icon: 'history',
+    label: 'Runs',
+    title: 'Run history',
+    subtitle: 'Inspect recent runs and jump to run detail context.',
+  },
+  {
+    id: 'assistant',
+    icon: 'sparkles',
+    label: 'Assistant',
+    title: 'Assistant',
+    subtitle: 'Generate a workflow proposal from natural language.',
+  },
+  {
+    id: 'builder',
+    icon: 'git-branch',
+    label: 'Builder',
+    title: 'Workflow builder',
+    subtitle: 'Visually compose and edit a workflow graph.',
+  },
+];
+
+const MOCK_TEMPLATES = [
+  {
+    id: 'managed_treasury',
+    name: 'Managed Crypto Treasury',
+    category: 'Treasury',
+    description: 'Wallet -> trade -> withdraw path for operator demos.',
+  },
+  {
+    id: 'treasury_demo',
+    name: 'Treasury Rebalance (Demo)',
+    category: 'Treasury',
+    description: 'Onramp and offramp lifecycle with deterministic states.',
+  },
+];
+
+const MOCK_RUNS = [
+  { id: 'run_e3e8f2', template: 'managed_treasury', status: 'completed', created_at: '2026-04-26T14:20:00Z' },
+  { id: 'run_16b6ac', template: 'treasury_demo', status: 'failed', created_at: '2026-04-26T14:08:00Z' },
+  { id: 'run_98f4d0', template: 'managed_treasury', status: 'running', created_at: '2026-04-26T13:59:00Z' },
+];
+
+function readRoute() {
+  const route = (window.location.hash || '').replace('#', '').trim();
+  return APP_ROUTES.some(r => r.id === route) ? route : 'templates';
+}
+
+function formatTime(value) {
+  try {
+    return new Date(value).toLocaleString();
+  } catch {
+    return value;
+  }
+}
+
+function TemplatesLanding({ onOpenRunner }) {
+  const [selectedTemplate, setSelectedTemplate] = React.useState(MOCK_TEMPLATES[0]);
+  return (
+    <div style={{ padding: 20, display: 'grid', gridTemplateColumns: '360px 1fr', gap: 18, height: '100%', overflow: 'auto' }}>
+      <div style={{ background: KColors.raised, border: `1px solid ${KColors.border}`, borderRadius: 10, overflow: 'hidden' }}>
+        <div style={{ padding: '12px 14px', borderBottom: `1px solid ${KColors.border}`, fontSize: 12, color: KColors.fg3, letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 600 }}>
+          Templates
+        </div>
+        <div style={{ padding: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {MOCK_TEMPLATES.map(t => (
+            <button
+              key={t.id}
+              onClick={() => setSelectedTemplate(t)}
+              style={{
+                border: `1px solid ${selectedTemplate.id === t.id ? KColors.primary : KColors.border}`,
+                background: selectedTemplate.id === t.id ? KColors.primaryDim : KColors.overlay,
+                color: selectedTemplate.id === t.id ? KColors.primaryLight : KColors.fg2,
+                borderRadius: 8,
+                padding: '10px 12px',
+                textAlign: 'left',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+              }}
+            >
+              <div style={{ fontSize: 13, fontWeight: 600 }}>{t.name}</div>
+              <div style={{ marginTop: 3, fontSize: 11, opacity: 0.9 }}>{t.category}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+      <div style={{ background: KColors.overlay, border: `1px solid ${KColors.border}`, borderRadius: 10, padding: 18, display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div>
+          <div style={{ fontSize: 12, color: KColors.fg3, letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 600 }}>Template detail</div>
+          <div style={{ marginTop: 8, fontSize: 18, fontWeight: 700, color: KColors.fg1 }}>{selectedTemplate.name}</div>
+          <div style={{ marginTop: 8, fontSize: 13, color: KColors.fg2, maxWidth: 640 }}>{selectedTemplate.description}</div>
+        </div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <KButton onClick={onOpenRunner}>Open in runner</KButton>
+          <KButton variant="secondary" onClick={() => { window.location.hash = '#builder'; }}>Edit in builder</KButton>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RunsLanding() {
+  const [selectedRunId, setSelectedRunId] = React.useState(MOCK_RUNS[0].id);
+  const selectedRun = MOCK_RUNS.find(r => r.id === selectedRunId) || MOCK_RUNS[0];
+  return (
+    <div style={{ padding: 20, display: 'grid', gridTemplateColumns: '380px 1fr', gap: 18, height: '100%', overflow: 'auto' }}>
+      <div style={{ background: KColors.raised, border: `1px solid ${KColors.border}`, borderRadius: 10, overflow: 'hidden' }}>
+        <div style={{ padding: '12px 14px', borderBottom: `1px solid ${KColors.border}`, fontSize: 12, color: KColors.fg3, letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 600 }}>
+          Recent runs
+        </div>
+        <div style={{ padding: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {MOCK_RUNS.map(run => (
+            <button
+              key={run.id}
+              onClick={() => setSelectedRunId(run.id)}
+              style={{
+                border: `1px solid ${selectedRunId === run.id ? KColors.primary : KColors.border}`,
+                background: selectedRunId === run.id ? KColors.primaryDim : KColors.overlay,
+                color: KColors.fg2,
+                borderRadius: 8,
+                padding: '10px 12px',
+                textAlign: 'left',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 11, color: KColors.fg3 }}>{run.id}</span>
+                <KPill status={run.status}>{run.status}</KPill>
+              </div>
+              <div style={{ marginTop: 6, fontSize: 12, color: KColors.fg1 }}>{run.template}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+      <div style={{ background: KColors.overlay, border: `1px solid ${KColors.border}`, borderRadius: 10, padding: 18, display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ fontSize: 12, color: KColors.fg3, letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 600 }}>Run detail</div>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 12, color: KColors.fg3 }}>{selectedRun.id}</span>
+          <KPill status={selectedRun.status}>{selectedRun.status}</KPill>
+        </div>
+        <div style={{ fontSize: 13, color: KColors.fg2 }}>
+          <strong style={{ color: KColors.fg1 }}>Template:</strong> {selectedRun.template}
+        </div>
+        <div style={{ fontSize: 13, color: KColors.fg2 }}>
+          <strong style={{ color: KColors.fg1 }}>Started:</strong> {formatTime(selectedRun.created_at)}
+        </div>
+        <div style={{ marginTop: 4, fontSize: 12, color: KColors.fg3 }}>
+          This shell-level run detail keeps list/detail navigation reachable before full Story 4.2 execution UI is wired.
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function App() {
-  const [page, setPage] = React.useState('runner');
+  const [page, setPage] = React.useState(readRoute);
+  const [templateOpenInRunner, setTemplateOpenInRunner] = React.useState(false);
 
   React.useEffect(() => {
     if (window.lucide) lucide.createIcons();
   });
 
+  React.useEffect(() => {
+    function onHashChange() {
+      setPage(readRoute());
+    }
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
+  React.useEffect(() => {
+    if ((window.location.hash || '').replace('#', '') !== page) {
+      window.location.hash = `#${page}`;
+    }
+  }, [page]);
+
+  function navigate(next) {
+    setPage(next);
+    if (next !== 'templates') setTemplateOpenInRunner(false);
+  }
+
+  const pageMeta = APP_ROUTES.find(r => r.id === page) || APP_ROUTES[0];
+
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
-      <KSidebar active={page} onNavigate={setPage}/>
+      <KSidebar active={page} onNavigate={navigate} navItems={APP_ROUTES}/>
       <main style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {/* Top bar */}
         <div style={{ padding: '12px 20px', borderBottom: `1px solid ${KColors.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
           <div>
             <div style={{ fontSize: 15, fontWeight: 600, color: KColors.fg1 }}>
-              {page === 'runner' ? 'Workflow runner' : page === 'ai' ? 'AI workflow generator' : 'Workflow builder'}
+              {pageMeta.title}
             </div>
             <div style={{ fontSize: 12, color: KColors.fg3, marginTop: 1 }}>
-              {page === 'runner'
-                ? 'Choose a pre-defined workflow template and run it.'
-                : page === 'ai'
-                ? 'Describe a financial workflow. Kinetic will generate and execute it.'
-                : 'Drag and drop steps to visually compose a crypto workflow.'}
+              {pageMeta.subtitle}
             </div>
           </div>
           <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 11, color: KColors.fg3, background: KColors.overlay, padding: '3px 8px', borderRadius: 4, border: `1px solid ${KColors.border}` }}>
@@ -67,7 +249,17 @@ function App() {
 
         {/* Screen content */}
         <div style={{ flex: 1, overflow: 'hidden' }}>
-          {page === 'runner' ? <WorkflowRunner/> : page === 'ai' ? <AIGenerator/> : <WorkflowBuilder/>}
+          {page === 'templates' ? (
+            templateOpenInRunner
+              ? <WorkflowRunner/>
+              : <TemplatesLanding onOpenRunner={() => setTemplateOpenInRunner(true)}/>
+          ) : page === 'runs' ? (
+            <RunsLanding/>
+          ) : page === 'assistant' ? (
+            <AIGenerator/>
+          ) : (
+            <WorkflowBuilder/>
+          )}
         </div>
       </main>
     </div>

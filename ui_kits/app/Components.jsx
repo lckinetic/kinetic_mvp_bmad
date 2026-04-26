@@ -213,8 +213,8 @@ function KDivider() {
 }
 
 // ── Sidebar nav ───────────────────────────────────────
-function KSidebar({ active, onNavigate }) {
-  const navItems = [
+function KSidebar({ active, onNavigate, navItems }) {
+  const items = navItems || [
     { id: 'runner',  icon: 'play-circle', label: 'Workflow runner' },
     { id: 'ai',      icon: 'cpu',         label: 'AI generator' },
     { id: 'builder', icon: 'git-branch',  label: 'Workflow builder' },
@@ -228,7 +228,7 @@ function KSidebar({ active, onNavigate }) {
       </div>
       {/* Nav */}
       <nav style={{ padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {navItems.map(item => (
+        {items.map(item => (
           <button
             key={item.id}
             onClick={() => onNavigate(item.id)}
