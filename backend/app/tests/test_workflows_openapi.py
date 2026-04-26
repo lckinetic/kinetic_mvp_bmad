@@ -36,6 +36,7 @@ def test_openapi_lists_workflow_list_start_status_paths() -> None:
     assert "/workflows/runs" in paths
     assert "/workflows/runs/{run_id}" in paths
     assert "/workflows/runs/{run_id}/steps" in paths
+    assert "/workflows/runs/{run_id}/inspection" in paths
 
 
 def test_openapi_component_schemas_include_workflow_models() -> None:
@@ -47,3 +48,5 @@ def test_openapi_component_schemas_include_workflow_models() -> None:
     assert "WorkflowTemplateSummary" in names
     assert "WorkflowTemplateDetail" in names
     assert "WorkflowRunStepResponse" in names
+    assert "WorkflowRunInspectionResponse" in names
+    assert "WorkflowWebhookEventResponse" in names

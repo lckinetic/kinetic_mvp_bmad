@@ -10,7 +10,7 @@ from app.core.config import get_settings, Settings
 from app.db.engine import get_engine
 
 from app.workflows.registry import list_templates, get_template
-from app.db.models import WorkflowRun, WorkflowStep
+from app.db.models import WebhookEvent, WorkflowRun, WorkflowStep
 import app.workflows  # noqa: F401  (ensures templates register)
 
 from app.engine.metrics import compute_run_metrics
@@ -107,6 +107,33 @@ class WorkflowRunStepResponse(BaseModel):
     duration_ms: Optional[int] = None
 
 
+class WorkflowWebhookEventResponse(BaseModel):
+    """One webhook event linked to inspected run context."""
+
+    model_config = ConfigDict(json_schema_extra={"title": "WorkflowWebhookEvent"})
+
+    id: int
+    provider: str
+    direction: str
+    event_type: str
+    order_id: Optional[str] = None
+    payload: Dict[str, Any] = Field(default_factory=dict)
+    processed: bool
+    received_at: Optional[str] = None
+    idempotency_key: str
+
+
+class WorkflowRunInspectionResponse(BaseModel):
+    """Support-focused run inspection payload with linked steps and webhook events."""
+
+    model_config = ConfigDict(json_schema_extra={"title": "WorkflowRunInspection"})
+
+    run: WorkflowRunResponse
+    steps: List[WorkflowRunStepResponse] = Field(default_factory=list)
+    linked_order_ids: List[str] = Field(default_factory=list)
+    webhook_events: List[WorkflowWebhookEventResponse] = Field(default_factory=list)
+
+
 def _to_response(db: Session, r: WorkflowRun) -> WorkflowRunResponse:
     metrics = compute_run_metrics(db, r)
     return WorkflowRunResponse(
@@ -152,6 +179,37 @@ def _template_detail(t: dict) -> WorkflowTemplateDetail:
         step_outline=list(t.get("step_outline") or []),
         step_labels=str_labels,
     )
+
+
+def _to_step_response(s: WorkflowStep) -> WorkflowRunStepResponse:
+    duration_ms = None
+    if s.started_at and s.ended_at:
+        duration_ms = int((s.ended_at - s.started_at).total_seconds() * 1000)
+    return WorkflowRunStepResponse(
+        id=s.id,
+        run_id=s.run_id,
+        seq=s.seq,
+        step_name=s.step_name,
+        status=s.status,
+        data=s.data or {},
+        error=s.error,
+        started_at=s.started_at.isoformat() if s.started_at else None,
+        ended_at=s.ended_at.isoformat() if s.ended_at else None,
+        duration_ms=duration_ms,
+    )
+
+
+def _collect_order_ids(value: Any, output: set[str]) -> None:
+    if isinstance(value, dict):
+        for key, nested in value.items():
+            if key in {"order_id", "onramp_order_id", "offramp_order_id"} and isinstance(nested, str):
+                order_id = nested.strip()
+                if order_id:
+                    output.add(order_id)
+            _collect_order_ids(nested, output)
+    elif isinstance(value, list):
+        for nested in value:
+            _collect_order_ids(nested, output)
 
 
 @router.post(
@@ -252,24 +310,60 @@ def list_run_steps(run_id: int, db: Session = Depends(get_db)):
         .order_by(WorkflowStep.seq.asc(), WorkflowStep.id.asc())
     ).all()
 
-    out = []
-    for s in steps:
-        duration_ms = None
-        if s.started_at and s.ended_at:
-            duration_ms = int((s.ended_at - s.started_at).total_seconds() * 1000)
+    return [_to_step_response(s) for s in steps]
 
-        out.append(
-            WorkflowRunStepResponse(
-                id=s.id,
-                run_id=s.run_id,
-                seq=s.seq,
-                step_name=s.step_name,
-                status=s.status,
-                data=s.data or {},
-                error=s.error,
-                started_at=s.started_at.isoformat() if s.started_at else None,
-                ended_at=s.ended_at.isoformat() if s.ended_at else None,
-                duration_ms=duration_ms,
-            )
+
+@router.get(
+    "/runs/{run_id}/inspection",
+    response_model=WorkflowRunInspectionResponse,
+    summary="Inspect run with linked step and webhook context",
+    response_description="Support payload combining run, steps, linked orders, and related webhooks",
+)
+def inspect_run(run_id: int, db: Session = Depends(get_db)):
+    run = db.get(WorkflowRun, run_id)
+    if not run:
+        raise HTTPException(status_code=404, detail="Workflow run not found")
+
+    steps = db.exec(
+        select(WorkflowStep)
+        .where(WorkflowStep.run_id == run_id)
+        .order_by(WorkflowStep.seq.asc(), WorkflowStep.id.asc())
+    ).all()
+    step_rows = [_to_step_response(s) for s in steps]
+
+    linked_order_ids: set[str] = set()
+    _collect_order_ids(run.input or {}, linked_order_ids)
+    _collect_order_ids(run.output or {}, linked_order_ids)
+    for s in steps:
+        _collect_order_ids(s.data or {}, linked_order_ids)
+
+    sorted_order_ids = sorted(linked_order_ids)
+    webhook_rows: list[WebhookEvent] = []
+    if sorted_order_ids:
+        webhook_rows = db.exec(
+            select(WebhookEvent)
+            .where(WebhookEvent.order_id.in_(sorted_order_ids))
+            .order_by(WebhookEvent.received_at.desc(), WebhookEvent.id.desc())
+        ).all()
+
+    webhook_events = [
+        WorkflowWebhookEventResponse(
+            id=w.id,
+            provider=w.provider,
+            direction=w.direction,
+            event_type=w.event_type,
+            order_id=w.order_id,
+            payload=w.payload or {},
+            processed=w.processed,
+            received_at=w.received_at.isoformat() if w.received_at else None,
+            idempotency_key=w.idempotency_key,
         )
-    return out
+        for w in webhook_rows
+    ]
+
+    return WorkflowRunInspectionResponse(
+        run=_to_response(db, run),
+        steps=step_rows,
+        linked_order_ids=sorted_order_ids,
+        webhook_events=webhook_events,
+    )
