@@ -95,3 +95,24 @@ class WorkflowStep(SQLModel, table=True):
 
     started_at: datetime = Field(default_factory=utcnow)
     ended_at: Optional[datetime] = None
+
+
+class AssistantProposal(SQLModel, table=True):
+    __table_args__ = (
+        UniqueConstraint("proposal_id", name="uq_assistant_proposal_id"),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    proposal_id: str = Field(index=True)
+    session_id: str = Field(index=True)
+    message: str
+    status: str = Field(default="proposed", index=True)
+
+    created_at: datetime = Field(default_factory=utcnow)
+    confirmed: bool = Field(default=False, index=True)
+    confirmed_at: Optional[datetime] = None
+    executed_at: Optional[datetime] = None
+
+    workflow: Dict[str, Any] = Field(sa_column=Column(JSON), default_factory=dict)
+    validation: Dict[str, Any] = Field(sa_column=Column(JSON), default_factory=dict)
+    execution: Optional[Dict[str, Any]] = Field(sa_column=Column(JSON), default=None)

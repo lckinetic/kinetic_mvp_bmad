@@ -23,6 +23,8 @@ def test_openapi_lists_assistant_proposal_routes_and_schemas() -> None:
     paths = payload["paths"]
     assert "/assistant/proposals" in paths
     assert "/assistant/proposals/{proposal_id}" in paths
+    assert "/assistant/proposals/{proposal_id}/confirm" in paths
+    assert "/assistant/proposals/{proposal_id}/execute" in paths
 
     post_proposals = paths["/assistant/proposals"]["post"]
     assert "requestBody" in post_proposals
