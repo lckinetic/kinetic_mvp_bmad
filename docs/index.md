@@ -16,6 +16,9 @@ Kinetic MVP is a **FastAPI** backend for **crypto on/off-ramp** flows, **webhook
 | Architecture (short) | [`architecture.md`](./architecture.md) |
 | Architecture principles (guardrails) | [`ai/architecture-principles.md`](./ai/architecture-principles.md) |
 | Local onboarding (canonical path) | [`onboarding-local.md`](./onboarding-local.md) |
+| MVP demo walkthrough | [`demo-mvp-flow.md`](./demo-mvp-flow.md) |
+| Release readiness checkpoint | [`release-readiness-checklist.md`](./release-readiness-checklist.md) |
+| Stakeholder handoff one-pager | [`stakeholder-handoff.md`](./stakeholder-handoff.md) |
 | Onramp | [`onramp.md`](./onramp.md) |
 | Offramp feature notes | [`features/offramp-mvp.md`](./features/offramp-mvp.md) |
 | Mock mode ADR | [`adr-001-mock-mode.md`](./adr-001-mock-mode.md) |
