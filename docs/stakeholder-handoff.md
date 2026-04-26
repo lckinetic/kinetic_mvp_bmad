@@ -10,6 +10,7 @@ This handoff summarizes where to start, what to demo, and current release-readin
 - AI execution mode can now be switched via env:
   - demo-safe mock mode
   - live mode with real model/API key
+- UI static-path hardening was applied to prevent intermittent blank-screen rendering in the runner flow when loading from `/ui-kit`.
 
 ## Start here
 

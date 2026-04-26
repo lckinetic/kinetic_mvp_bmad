@@ -5,8 +5,7 @@ This is the canonical walkthrough for product demos after Epics 1-7 completion.
 ## Preconditions
 
 - Backend is running locally (`MOCK_MODE=true`).
-- UI kit is served from `ui_kits/app/index.html` (or equivalent static host).
-- Optional: set `window.KINETIC_API_BASE` to target a different backend origin.
+- UI kit is served from backend same-origin path: `http://127.0.0.1:8000/ui-kit`.
 - Pick one mode before demo:
   - `cp backend/.env.mock.example backend/.env` for deterministic demo-safe mode
   - `cp backend/.env.live.example backend/.env` for real AI calls
@@ -43,5 +42,5 @@ This is the canonical walkthrough for product demos after Epics 1-7 completion.
 ## Troubleshooting quick notes
 
 - If API calls fail, UI falls back to deterministic local mock data for templates/runs and run completion.
-- If no runs appear from API, confirm backend is up and `KINETIC_API_BASE` is correct.
+- If no runs appear from API, confirm backend is up and open the UI from `/ui-kit` (same origin).
 - If styles/icons look incorrect, refresh once after startup and verify static assets loaded.

@@ -1,6 +1,8 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 import logging
 
 from app.core.config import get_settings
@@ -55,9 +57,14 @@ def create_app() -> FastAPI:
     app = FastAPI(title="Kinetic MVP API", version="0.1.0", lifespan=lifespan)
     register_error_handlers(app)
 
+    repo_root = Path(__file__).resolve().parents[2]
+    ui_kit_dir = repo_root / "ui_kits" / "app"
+    if ui_kit_dir.exists():
+        app.mount("/ui-kit", StaticFiles(directory=str(ui_kit_dir), html=True), name="ui-kit")
+
     @app.get("/")
     def root():
-        return {"message": "Kinetic MVP API", "docs": "/docs", "health": "/health"}
+        return {"message": "Kinetic MVP API", "docs": "/docs", "health": "/health", "ui_kit": "/ui-kit"}
 
     app.include_router(health_router)
     app.include_router(onramp_router)

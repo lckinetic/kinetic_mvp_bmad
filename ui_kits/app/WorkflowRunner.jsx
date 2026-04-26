@@ -82,7 +82,16 @@ function WorkflowRunner({ initialTemplateName = null }) {
   const [runId, setRunId] = React.useState('');
   const [apiError, setApiError] = React.useState('');
 
-  const tmpl = selectedTemplate;
+  const tmpl = selectedTemplate || templates[0] || TEMPLATES[0] || null;
+  const templateName = String(tmpl?.name || "");
+  const templateDisplayName = String(tmpl?.display_name || tmpl?.name || "Workflow template");
+  const templateVersion = String(tmpl?.version || "1.0");
+  const templateDescription = String(tmpl?.description || "No template description provided.");
+  const templateCategory = String(tmpl?.category || "workflow");
+  const businessSummary = String(tmpl?.business_summary || "Run a workflow template.");
+  const stepOutline = Array.isArray(tmpl?.step_outline) ? tmpl.step_outline : [];
+  const stepLabels = tmpl?.step_labels || {};
+  const businessSteps = Array.isArray(tmpl?.business_steps) ? tmpl.business_steps : [];
 
   React.useEffect(() => {
     let cancelled = false;
@@ -123,9 +132,9 @@ function WorkflowRunner({ initialTemplateName = null }) {
       // Fall back to summary status.
     }
     const fallback = {};
-    (tmpl.step_outline || []).forEach(s => { fallback[s] = run.status === 'failed' ? 'failed' : 'completed'; });
+    stepOutline.forEach(s => { fallback[s] = run.status === 'failed' ? 'failed' : 'completed'; });
     setStepStatuses(fallback);
-    setStepRows((tmpl.step_outline || []).map((name, idx) => ({
+    setStepRows(stepOutline.map((name, idx) => ({
       seq: idx + 1,
       step_name: name,
       status: fallback[name],
@@ -135,24 +144,25 @@ function WorkflowRunner({ initialTemplateName = null }) {
 
   async function handleRun() {
     if (runState === 'running') return;
+    if (!templateName) return;
     setApiError('');
     setRunState('running');
     const init = {};
-    (tmpl.step_outline || []).forEach(s => { init[s] = 'pending'; });
+    stepOutline.forEach(s => { init[s] = 'pending'; });
     setStepStatuses(init);
     setStepRows([]);
     try {
-      const run = await apiPost(`/workflows/run/${tmpl.name}`, { input: inputs });
+      const run = await apiPost(`/workflows/run/${templateName}`, { input: inputs });
       setRunId(String(run.id));
       await loadSteps(run);
       setRunState('done');
     } catch {
       setApiError('Unable to run workflow API. Showing fallback simulation.');
       const durations = {};
-      (tmpl.step_outline || []).forEach((name, idx) => {
+      stepOutline.forEach((name, idx) => {
         durations[name] = 350 + idx * 120;
       });
-      const rows = (tmpl.step_outline || []).map((name, idx) => ({
+      const rows = stepOutline.map((name, idx) => ({
         seq: idx + 1,
         step_name: name,
         status: 'completed',
@@ -168,7 +178,7 @@ function WorkflowRunner({ initialTemplateName = null }) {
   }
 
   const totalDone = Object.values(stepStatuses).filter(s => s === 'completed').length;
-  const pct = (tmpl.step_outline || []).length ? Math.round((totalDone / (tmpl.step_outline || []).length) * 100) : 0;
+  const pct = stepOutline.length ? Math.round((totalDone / stepOutline.length) * 100) : 0;
   const overallStatus = runState === 'idle' ? null : runState === 'running' ? 'running' : 'completed';
 
   return (
@@ -179,20 +189,20 @@ function WorkflowRunner({ initialTemplateName = null }) {
           <KSectionLabel>Template</KSectionLabel>
           <KSelect
             options={templates.map(t => ({ value: t.name, label: t.display_name }))}
-            value={tmpl.name}
+            value={templateName}
             onChange={name => {
-              setSelectedTemplate(templates.find(t => t.name === name));
+              setSelectedTemplate(templates.find(t => t.name === name) || templates[0] || TEMPLATES[0]);
               setRunState('idle'); setStepStatuses({}); setStepRows([]);
             }}
           />
           <div style={{ marginTop: 10, padding: 12, background: KColors.overlay, borderRadius: 8, border: `1px solid ${KColors.border}` }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: KColors.fg1 }}>{tmpl.display_name}</span>
-              <KPill status="default">v{tmpl.version}</KPill>
+              <span style={{ fontSize: 13, fontWeight: 600, color: KColors.fg1 }}>{templateDisplayName}</span>
+              <KPill status="default">v{templateVersion}</KPill>
             </div>
-            <div style={{ fontSize: 12, color: KColors.fg3 }}>{tmpl.description}</div>
+            <div style={{ fontSize: 12, color: KColors.fg3 }}>{templateDescription}</div>
             <div style={{ marginTop: 6, fontSize: 11, color: KColors.fg3, fontFamily: 'IBM Plex Mono, monospace', letterSpacing: '0.02em' }}>
-              {tmpl.category.toUpperCase()}
+              {templateCategory.toUpperCase()}
             </div>
           </div>
         </div>
@@ -220,10 +230,14 @@ function WorkflowRunner({ initialTemplateName = null }) {
         {/* Overview */}
         <div>
           <KSectionLabel>Workflow overview</KSectionLabel>
-          <div style={{ fontSize: 14, fontWeight: 600, color: KColors.fg1, marginBottom: 4 }}>{tmpl.business_summary}</div>
-          <ol style={{ margin: 0, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 3 }}>
-            {tmpl.business_steps.map((s,i) => <li key={i} style={{ fontSize: 13, color: KColors.fg2 }}>{s}</li>)}
-          </ol>
+          <div style={{ fontSize: 14, fontWeight: 600, color: KColors.fg1, marginBottom: 4 }}>{businessSummary}</div>
+          {businessSteps.length > 0 ? (
+            <ol style={{ margin: 0, paddingLeft: 20, display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {businessSteps.map((s,i) => <li key={i} style={{ fontSize: 13, color: KColors.fg2 }}>{s}</li>)}
+            </ol>
+          ) : (
+            <div style={{ fontSize: 13, color: KColors.fg2 }}>No business steps provided for this template.</div>
+          )}
         </div>
 
         <KDivider/>
@@ -231,8 +245,8 @@ function WorkflowRunner({ initialTemplateName = null }) {
         {/* Progress */}
         <div>
           <KSectionLabel>Progress</KSectionLabel>
-          <KStepper steps={tmpl.step_outline.map(k => tmpl.step_labels[k] || k)} statuses={
-            Object.fromEntries(tmpl.step_outline.map((k) => [tmpl.step_labels[k] || k, stepStatuses[k] || 'pending']))
+          <KStepper steps={stepOutline.map(k => stepLabels[k] || k)} statuses={
+            Object.fromEntries(stepOutline.map((k) => [stepLabels[k] || k, stepStatuses[k] || 'pending']))
           }/>
         </div>
 
@@ -259,7 +273,8 @@ function WorkflowRunner({ initialTemplateName = null }) {
           <div>
             <KSectionLabel>Output</KSectionLabel>
             <KCodeBlock readOnly value={JSON.stringify({
-              template: tmpl.name,
+              template: templateName,
+              template_display_name: templateDisplayName,
               run_id: runId,
               status: overallStatus || 'completed',
               steps: stepRows.map(s => ({ step: s.step_name, status: s.status })),

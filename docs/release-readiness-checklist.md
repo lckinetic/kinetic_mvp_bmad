@@ -9,6 +9,7 @@ Current status: **MVP ready** for controlled demos and internal handoff.
 - [x] Workflow API smoke path in CI (`.github/workflows/workflow-api-smoke.yml`) exists and is scoped.
 - [x] Local onboarding has canonical path (`docs/onboarding-local.md`).
 - [x] UI shell supports templates, runs, assistant, and builder route flow.
+- [x] UI static-path hardening is in place for `/ui-kit` to prevent blank-screen regressions in runner flow.
 - [x] AI mode switching is available via env (`MOCK_MODE` + AI settings), with backend capability endpoint support.
 - [x] Accessibility baseline for keyboard/focus on core UI paths is implemented.
 

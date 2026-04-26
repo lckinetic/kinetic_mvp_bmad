@@ -292,3 +292,38 @@ So that **API parity does not regress** (innovation validation).
 **Acceptance criteria**
 
 - **Given** CI pipeline, **when** it runs, **then** at least one test exercises list/start/status for prebuilts in MOCK_MODE.
+
+---
+
+## Epic 8: Post-MVP hardening and demo reliability
+
+**Goal:** Lock in demo-safe operations and eliminate high-friction runtime failures discovered during end-to-end MVP validation.
+
+### Story 8.1: AI mode switching and capabilities
+
+As a **demo operator**,  
+I want **deterministic mock mode and real AI mode selectable via environment settings**,  
+So that **I can run safe demos or live AI experiences on demand**.
+
+### Story 8.2: Secret safety and error hardening
+
+As an **operator**,  
+I want **structured AI failure envelopes and strict secret redaction**,  
+So that **keys are never exposed in logs, responses, or diagnostics**.
+
+### Story 8.3: Demo operations tooling and docs
+
+As a **project lead**,  
+I want **simple mode-switch scripts and canonical demo/release docs**,  
+So that **team and stakeholder walkthroughs stay repeatable**.
+
+### Story 8.4: UI kit static path hardening (blank-screen fix)
+
+As a **demo user**,  
+I want **the UI kit to load component scripts reliably regardless of URL form**,  
+So that **the runner does not render a blank screen during MVP demos**.
+
+**Acceptance criteria**
+
+- **Given** the UI is served at `/ui-kit` or `/ui-kit/`, **when** the page loads, **then** all JSX component scripts are requested from stable absolute paths and return HTTP 200.
+- **And** **given** Templates -> Open in runner, **when** opening the runner view, **then** the app shell and runner content render without a blank screen regression.
