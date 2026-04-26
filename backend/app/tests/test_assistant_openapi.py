@@ -25,6 +25,7 @@ def test_openapi_lists_assistant_proposal_routes_and_schemas() -> None:
     assert "/assistant/proposals/{proposal_id}" in paths
     assert "/assistant/proposals/{proposal_id}/confirm" in paths
     assert "/assistant/proposals/{proposal_id}/execute" in paths
+    assert "/assistant/proposals/{proposal_id}/ui-handoff" in paths
 
     post_proposals = paths["/assistant/proposals"]["post"]
     assert "requestBody" in post_proposals
@@ -35,3 +36,4 @@ def test_openapi_lists_assistant_proposal_routes_and_schemas() -> None:
     assert "AssistantProposalRequest" in components
     assert "AssistantProposalResponse" in components
     assert "AssistantProposalValidation" in components
+    assert "AssistantBuilderHandoffResponse" in components

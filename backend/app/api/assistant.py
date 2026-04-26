@@ -9,8 +9,10 @@ from sqlmodel import Session
 from app.core.config import Settings, get_settings
 from app.db.engine import get_engine
 from app.services.assistant_proposals import (
+    ProposalInvalidStateError,
     ProposalNotConfirmedError,
     ProposalNotFoundError,
+    build_ui_handoff,
     confirm_proposal,
     create_proposal,
     execute_proposal,
@@ -54,6 +56,16 @@ class AssistantProposalResponse(BaseModel):
     workflow: dict[str, Any]
     validation: AssistantProposalValidation
     execution: dict[str, Any] | None = None
+
+
+class AssistantBuilderHandoffResponse(BaseModel):
+    proposal_id: str
+    session_id: str
+    status: str
+    workflow_name: str
+    nodes: list[dict[str, Any]]
+    edges: list[dict[str, Any]]
+    source: str
 
 
 @router.post(
@@ -134,3 +146,26 @@ def execute_assistant_proposal(proposal_id: str, db: Session = Depends(get_db)):
             },
         )
     return AssistantProposalResponse.model_validate(proposal)
+
+
+@router.get(
+    "/proposals/{proposal_id}/ui-handoff",
+    response_model=AssistantBuilderHandoffResponse,
+    summary="Get builder-ready UI handoff payload",
+    response_description="Proposal mapped into workflow builder nodes and edges",
+)
+def get_assistant_ui_handoff(proposal_id: str, db: Session = Depends(get_db)):
+    try:
+        payload = build_ui_handoff(db, proposal_id)
+    except ProposalNotFoundError:
+        raise HTTPException(status_code=404, detail="Assistant proposal not found")
+    except ProposalInvalidStateError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "INVALID_PROPOSAL_STATE",
+                "message": "Proposal is not ready for UI handoff",
+                "details": {"reason": str(exc)},
+            },
+        )
+    return AssistantBuilderHandoffResponse.model_validate(payload)

@@ -9,12 +9,13 @@ from tempfile import mkstemp
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel import Session, SQLModel, create_engine, select
 
 from app.api.assistant import get_db, router as assistant_router
 from app.core.config import Settings
 from app.core.errors import register_error_handlers
 from app.db import models  # noqa: F401  # ensure metadata registration
+from app.db.models import AssistantProposal
 
 
 def _mk_settings(db_path: str) -> Settings:
@@ -242,6 +243,83 @@ def test_proposal_persists_across_app_recreation() -> None:
         fetched = client2.get(f"/assistant/proposals/{proposal_id}")
         assert fetched.status_code == 200
         assert fetched.json()["proposal_id"] == proposal_id
+    finally:
+        if os.path.exists(db_path):
+            os.remove(db_path)
+
+
+def test_ui_handoff_requires_confirmed_state() -> None:
+    app, db_path = _assistant_app()
+    try:
+        client = TestClient(app)
+        created = client.post("/assistant/proposals", json={"message": "Create wallet for me"})
+        proposal_id = created.json()["proposal_id"]
+
+        res = client.get(f"/assistant/proposals/{proposal_id}/ui-handoff")
+        assert res.status_code == 409
+        payload = res.json()
+        assert payload["code"] == "INVALID_PROPOSAL_STATE"
+        assert "reason" in payload["details"]
+    finally:
+        if os.path.exists(db_path):
+            os.remove(db_path)
+
+
+def test_ui_handoff_returns_builder_payload_after_confirm() -> None:
+    app, db_path = _assistant_app()
+    try:
+        client = TestClient(app)
+        created = client.post("/assistant/proposals", json={"message": "Fund wallet with USDC"})
+        proposal_id = created.json()["proposal_id"]
+        client.post(f"/assistant/proposals/{proposal_id}/confirm")
+
+        res = client.get(f"/assistant/proposals/{proposal_id}/ui-handoff")
+        assert res.status_code == 200
+        payload = res.json()
+        assert payload["proposal_id"] == proposal_id
+        assert payload["source"] == "assistant_proposal"
+        assert isinstance(payload["nodes"], list) and payload["nodes"]
+        assert isinstance(payload["edges"], list)
+        assert payload["nodes"][0]["id"].startswith("node_")
+    finally:
+        if os.path.exists(db_path):
+            os.remove(db_path)
+
+
+def test_ui_handoff_preserves_explicit_branch_edges_when_present() -> None:
+    app, db_path = _assistant_app()
+    try:
+        client = TestClient(app)
+        created = client.post("/assistant/proposals", json={"message": "Fund wallet with USDC"})
+        proposal_id = created.json()["proposal_id"]
+        client.post(f"/assistant/proposals/{proposal_id}/confirm")
+
+        engine = create_engine(f"sqlite:///{db_path}")
+        with Session(engine) as db:
+            row = db.exec(select(AssistantProposal).where(AssistantProposal.proposal_id == proposal_id)).first()
+            assert row is not None
+            row.workflow = {
+                "workflow_name": "branch_demo",
+                "steps": [
+                    {"id": "step_1", "type": "engine.start", "next_steps": ["step_2", "step_3"]},
+                    {"id": "step_2", "type": "engine.path_a", "next": "step_4"},
+                    {"id": "step_3", "type": "engine.path_b", "next": "step_4"},
+                    {"id": "step_4", "type": "engine.join"},
+                ],
+            }
+            db.add(row)
+            db.commit()
+
+        res = client.get(f"/assistant/proposals/{proposal_id}/ui-handoff")
+        assert res.status_code == 200
+        payload = res.json()
+        edge_pairs = {(e["from"], e["to"]) for e in payload["edges"]}
+        assert edge_pairs == {
+            ("node_step_1", "node_step_2"),
+            ("node_step_1", "node_step_3"),
+            ("node_step_2", "node_step_4"),
+            ("node_step_3", "node_step_4"),
+        }
     finally:
         if os.path.exists(db_path):
             os.remove(db_path)

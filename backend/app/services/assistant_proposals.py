@@ -27,6 +27,10 @@ class ProposalNotConfirmedError(RuntimeError):
     pass
 
 
+class ProposalInvalidStateError(RuntimeError):
+    pass
+
+
 def _now_iso() -> str:
     return datetime.now(UTC).isoformat()
 
@@ -43,6 +47,30 @@ def _fingerprint(value: str, size: int = 12) -> str:
 
 def _make_session_id(prompt: str) -> str:
     return f"chat_{_fingerprint(prompt.strip().lower(), size=10)}"
+
+
+def _as_step_links(value: Any) -> list[str]:
+    if isinstance(value, str) and value.strip():
+        return [value.strip()]
+    if isinstance(value, list):
+        out: list[str] = []
+        for item in value:
+            if isinstance(item, str) and item.strip():
+                out.append(item.strip())
+        return out
+    return []
+
+
+def _extract_step_targets(step: dict[str, Any]) -> list[str]:
+    targets: list[str] = []
+    for key in ("next", "next_step", "on_success", "on_failure"):
+        targets.extend(_as_step_links(step.get(key)))
+    targets.extend(_as_step_links(step.get("next_steps")))
+    branches = step.get("branches")
+    if isinstance(branches, dict):
+        for value in branches.values():
+            targets.extend(_as_step_links(value))
+    return targets
 
 
 def _is_actionable_prompt(prompt: str) -> bool:
@@ -189,3 +217,59 @@ def execute_proposal(db: Session, proposal_id: str) -> dict[str, Any]:
     db.commit()
     db.refresh(row)
     return _to_payload(row)
+
+
+def build_ui_handoff(db: Session, proposal_id: str) -> dict[str, Any]:
+    row = db.exec(select(AssistantProposal).where(AssistantProposal.proposal_id == proposal_id)).first()
+    if not row:
+        raise ProposalNotFoundError(proposal_id)
+    if not row.confirmed:
+        raise ProposalInvalidStateError("Proposal must be confirmed before UI handoff.")
+
+    workflow = row.workflow or {}
+    steps = workflow.get("steps") or []
+
+    nodes: list[dict[str, Any]] = []
+    edges: list[dict[str, Any]] = []
+    step_to_node: dict[str, str] = {}
+    for idx, step in enumerate(steps, start=1):
+        raw_step_id = str(step.get("id") or f"step_{idx}")
+        node_id = f"node_{raw_step_id}"
+        step_to_node[raw_step_id] = node_id
+        step_type = str(step.get("type") or "engine.step")
+        nodes.append(
+            {
+                "id": node_id,
+                "type": step_type,
+                "label": step_type.split(".")[-1].replace("_", " "),
+                "provider": step_type.split(".")[0] if "." in step_type else "engine",
+                "params": step.get("params") or {},
+                "seq": idx,
+            }
+        )
+
+    explicit_edges: list[tuple[str, str]] = []
+    for idx, step in enumerate(steps, start=1):
+        source_step_id = str(step.get("id") or f"step_{idx}")
+        source_node_id = step_to_node[source_step_id]
+        for target_step_id in _extract_step_targets(step):
+            target_node_id = step_to_node.get(target_step_id)
+            if target_node_id:
+                explicit_edges.append((source_node_id, target_node_id))
+
+    if explicit_edges:
+        for idx, (src, dst) in enumerate(explicit_edges, start=1):
+            edges.append({"id": f"edge_{idx}", "from": src, "to": dst})
+    else:
+        for idx in range(2, len(nodes) + 1):
+            edges.append({"id": f"edge_{idx-1}", "from": nodes[idx - 2]["id"], "to": nodes[idx - 1]["id"]})
+
+    return {
+        "proposal_id": row.proposal_id,
+        "session_id": row.session_id,
+        "status": row.status,
+        "workflow_name": str(workflow.get("workflow_name") or "assistant_workflow"),
+        "nodes": nodes,
+        "edges": edges,
+        "source": "assistant_proposal",
+    }
