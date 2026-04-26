@@ -53,6 +53,7 @@ function KButton({ children, variant = 'primary', size = 'md', disabled, onClick
   const [pressed, setPressed] = React.useState(false);
   return (
     <button
+      type="button"
       style={{ ...base, ...sizes[size], ...variants[variant], ...(hovered && !disabled ? { opacity: 0.85 } : {}), ...(pressed && !disabled ? { transform: 'scale(0.98)' } : {}), ...style }}
       disabled={disabled}
       onClick={onClick}
@@ -67,10 +68,12 @@ function KButton({ children, variant = 'primary', size = 'md', disabled, onClick
 // ── Input ─────────────────────────────────────────────
 function KInput({ label, hint, error, type = 'text', value, onChange, placeholder, min, max, step }) {
   const [focused, setFocused] = React.useState(false);
+  const inputId = React.useId();
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      {label && <label style={{ fontSize: 12, fontWeight: 500, color: KColors.fg2, letterSpacing: '0.01em' }}>{label}</label>}
+      {label && <label htmlFor={inputId} style={{ fontSize: 12, fontWeight: 500, color: KColors.fg2, letterSpacing: '0.01em' }}>{label}</label>}
       <input
+        id={inputId}
         type={type} value={value} onChange={e => onChange && onChange(e.target.value)}
         placeholder={placeholder} min={min} max={max} step={step}
         onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
@@ -91,10 +94,12 @@ function KInput({ label, hint, error, type = 'text', value, onChange, placeholde
 // ── Select ────────────────────────────────────────────
 function KSelect({ label, hint, options, value, onChange }) {
   const [focused, setFocused] = React.useState(false);
+  const selectId = React.useId();
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      {label && <label style={{ fontSize: 12, fontWeight: 500, color: KColors.fg2, letterSpacing: '0.01em' }}>{label}</label>}
+      {label && <label htmlFor={selectId} style={{ fontSize: 12, fontWeight: 500, color: KColors.fg2, letterSpacing: '0.01em' }}>{label}</label>}
       <select
+        id={selectId}
         value={value} onChange={e => onChange && onChange(e.target.value)}
         onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
         style={{
@@ -220,7 +225,7 @@ function KSidebar({ active, onNavigate, navItems }) {
     { id: 'builder', icon: 'git-branch',  label: 'Workflow builder' },
   ];
   return (
-    <div style={{ width: 220, background: KColors.raised, borderRight: `1px solid ${KColors.border}`, display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+    <aside aria-label="Primary navigation" style={{ width: 220, background: KColors.raised, borderRight: `1px solid ${KColors.border}`, display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
       {/* Logo */}
       <div style={{ padding: '18px 16px 16px', display: 'flex', alignItems: 'center', gap: 10, borderBottom: `1px solid ${KColors.border}` }}>
         <KLogo size={28}/>
@@ -232,6 +237,7 @@ function KSidebar({ active, onNavigate, navItems }) {
           <button
             key={item.id}
             onClick={() => onNavigate(item.id)}
+            aria-current={active === item.id ? 'page' : undefined}
             style={{
               display: 'flex', alignItems: 'center', gap: 9, padding: '8px 10px',
               borderRadius: 6, border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%',
@@ -250,7 +256,7 @@ function KSidebar({ active, onNavigate, navItems }) {
       <div style={{ marginTop: 'auto', padding: '12px 16px', borderTop: `1px solid ${KColors.border}` }}>
         <div style={{ fontSize: 11, color: KColors.fg3 }}>MVP · v0.1.0</div>
       </div>
-    </div>
+    </aside>
   );
 }
 

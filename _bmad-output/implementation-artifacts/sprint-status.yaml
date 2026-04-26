@@ -1,5 +1,5 @@
 # generated: 2026-04-12T12:00:00Z
-# last_updated: 2026-04-26T16:01:00Z
+# last_updated: 2026-04-26T16:08:00Z
 # project: kinetic-mvp-bmad
 # project_key: NOKEY
 # tracking_system: file-system
@@ -24,7 +24,7 @@
 #   - done: Retrospective has been completed
 
 generated: "2026-04-12T12:00:00Z"
-last_updated: "2026-04-26T16:01:00Z"
+last_updated: "2026-04-26T16:08:00Z"
 project: kinetic-mvp-bmad
 project_key: NOKEY
 tracking_system: file-system
@@ -48,10 +48,10 @@ development_status:
   3-3-mock-connector-determinism: done
   epic-3-retrospective: done
 
-  epic-4: in-progress
+  epic-4: done
   4-1-app-shell-navigation: done
   4-2-template-browse-run-ui: done
-  4-3-accessibility-baseline: backlog
+  4-3-accessibility-baseline: done
   epic-4-retrospective: optional
 
   epic-5: done

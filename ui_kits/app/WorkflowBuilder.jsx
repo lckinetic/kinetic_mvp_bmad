@@ -221,6 +221,13 @@ function WorkflowBuilder() {
 
   const selectedNode = nodes.find(n => n.id === selectedId) || null;
 
+  function addNodeFromPalette(type) {
+    const index = nodes.length;
+    const x = 80 + (index % 3) * 220;
+    const y = 90 + Math.floor(index / 3) * 110;
+    setNodes(prev => [...prev, makeNode(type, x, y)]);
+  }
+
   function handleNodeMouseDown(nodeId, e) {
     if (connectingFrom) return;
     e.stopPropagation();
@@ -345,6 +352,15 @@ function WorkflowBuilder() {
                 <div
                   key={step.type}
                   onMouseDown={e => handlePaletteDragStart(step.type, e)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      addNodeFromPalette(step.type);
+                    }
+                  }}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`Add ${step.label} step`}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 8,
                     padding: '7px 8px', borderRadius: 6, marginBottom: 4,
