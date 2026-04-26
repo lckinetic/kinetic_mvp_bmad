@@ -124,6 +124,17 @@ source .venv/bin/activate
 python -m pytest backend/app/tests/test_workflows_openapi.py backend/app/tests/test_assistant_openapi.py -q
 ```
 
+## 9) CI smoke parity command
+
+The GitHub Actions smoke workflow runs this command:
+
+```bash
+source .venv/bin/activate
+python -m pytest backend/app/tests/test_workflows_headless_lifecycle.py backend/app/tests/test_workflows_openapi.py -q
+```
+
+This keeps CI focused on prebuilt workflow list/start/status coverage in MOCK_MODE.
+
 ## Troubleshooting
 
 - **`ModuleNotFoundError: sqlmodel`**
