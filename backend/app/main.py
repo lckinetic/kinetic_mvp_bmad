@@ -38,6 +38,10 @@ def create_app() -> FastAPI:
             safe_settings_log(
                 {
                     "MOCK_MODE": settings.mock_mode,
+                    "AI_PROVIDER": settings.ai_provider,
+                    "AI_MODEL": settings.ai_model,
+                    "OPENAI_API_KEY": settings.openai_api_key,
+                    "OPENAI_BASE_URL": settings.openai_base_url,
                     "BANXA_ENV": settings.banxa_env,
                     "DATABASE_URL": settings.database_url,
                     "BANXA_API_KEY": settings.banxa_api_key,

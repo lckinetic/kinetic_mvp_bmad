@@ -289,6 +289,7 @@ function App() {
   const [page, setPage] = React.useState(readRoute);
   const [templateOpenInRunner, setTemplateOpenInRunner] = React.useState(false);
   const [runnerTemplateName, setRunnerTemplateName] = React.useState(null);
+  const [aiCapabilities, setAiCapabilities] = React.useState({ mock_mode: true, provider: "mock", model: "rule-based" });
   const mainHeadingRef = React.useRef(null);
 
   React.useEffect(() => {
@@ -308,6 +309,26 @@ function App() {
       window.location.hash = `#${page}`;
     }
   }, [page]);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    async function loadCapabilities() {
+      try {
+        const payload = await apiGet('/ai/capabilities');
+        if (!cancelled && payload && typeof payload === 'object') {
+          setAiCapabilities({
+            mock_mode: Boolean(payload.mock_mode),
+            provider: String(payload.provider || 'mock'),
+            model: String(payload.model || 'rule-based'),
+          });
+        }
+      } catch {
+        // Keep default mock badge when backend capability endpoint is unavailable.
+      }
+    }
+    loadCapabilities();
+    return () => { cancelled = true; };
+  }, []);
 
   React.useEffect(() => {
     if (mainHeadingRef.current) {
@@ -339,7 +360,7 @@ function App() {
             </div>
           </div>
           <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 11, color: KColors.fg3, background: KColors.overlay, padding: '3px 8px', borderRadius: 4, border: `1px solid ${KColors.border}` }}>
-            MOCK MODE
+            {aiCapabilities.mock_mode ? 'MOCK MODE' : `LIVE AI · ${aiCapabilities.model}`}
           </span>
         </div>
 

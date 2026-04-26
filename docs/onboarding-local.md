@@ -67,6 +67,13 @@ LOG_LEVEL=INFO
 Notes:
 - Keep `MOCK_MODE=true` for safe local demos.
 - Never use production secrets in local files.
+- For quick mode switching:
+  - `cp backend/.env.mock.example backend/.env` (deterministic demo mode)
+  - `cp backend/.env.live.example backend/.env` (real AI mode; requires valid `OPENAI_API_KEY`)
+- Or use helper scripts from repo root:
+  - `./scripts/use-mock.sh`
+  - `./scripts/use-live.sh`
+- In live mode (`MOCK_MODE=false`), backend enforces `AI_PROVIDER=openai`, `AI_MODEL`, and `OPENAI_API_KEY`.
 
 ## 5) Start API
 
@@ -89,6 +96,12 @@ curl http://127.0.0.1:8000/health
 
 Open:
 - `http://127.0.0.1:8000/docs`
+
+Optional AI mode diagnostics (no secret values returned):
+
+```bash
+curl http://127.0.0.1:8000/ai/config-status
+```
 
 Expected health response:
 

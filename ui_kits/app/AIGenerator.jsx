@@ -43,21 +43,22 @@ function getFallbackWorkflow(prompt) {
   };
 }
 
-function simulateAIRun(steps, onStep, onDone) {
-  let i = 0;
-  const durations = {};
-  function next() {
-    if (i >= steps.length) { onDone(); return; }
-    onStep(i, 'running', durations);
-    const delay = 500 + Math.random() * 700;
-    setTimeout(() => {
-      durations[i] = Math.round(300 + Math.random() * 600);
-      onStep(i, 'completed', durations);
-      i++;
-      setTimeout(next, 200);
-    }, delay);
-  }
-  next();
+const API_BASE = window.KINETIC_API_BASE || '';
+
+async function apiGet(path) {
+  const res = await fetch(`${API_BASE}${path}`);
+  if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+  return res.json();
+}
+
+async function apiPost(path, body) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+  return res.json();
 }
 
 function StepCard({ step, idx }) {
@@ -80,47 +81,118 @@ function AIGenerator() {
   const [workflowJson, setWorkflowJson] = React.useState('{}');
   const [stepStatuses, setStepStatuses] = React.useState([]);
   const [runSummary, setRunSummary] = React.useState(null);
-  const [runId] = React.useState(() => Math.random().toString(36).slice(2,10));
+  const [runId, setRunId] = React.useState(() => Math.random().toString(36).slice(2,10));
+  const [modeInfo, setModeInfo] = React.useState({ mock_mode: true, provider: 'mock', model: 'rule-based' });
+  const [apiError, setApiError] = React.useState('');
 
-  function handleGenerate() {
+  React.useEffect(() => {
+    let cancelled = false;
+    async function loadCapabilities() {
+      try {
+        const payload = await apiGet('/ai/capabilities');
+        if (!cancelled && payload && typeof payload === 'object') {
+          setModeInfo({
+            mock_mode: Boolean(payload.mock_mode),
+            provider: String(payload.provider || 'mock'),
+            model: String(payload.model || 'rule-based'),
+          });
+        }
+      } catch {
+        // Keep local fallback metadata.
+      }
+    }
+    loadCapabilities();
+    return () => { cancelled = true; };
+  }, []);
+
+  async function handleGenerate() {
     if (!prompt.trim() || genState === 'generating') return;
+    setApiError('');
     setGenState('generating');
     setWorkflow(null);
     setRunState('idle');
     setStepStatuses([]);
     setRunSummary(null);
 
-    setTimeout(() => {
-      const wf = MOCK_WORKFLOWS[prompt.trim()] || getFallbackWorkflow(prompt.trim());
+    try {
+      const payload = await apiPost('/ai/interpret', { message: prompt.trim() });
+      const wf = {
+        workflow_name: payload.workflow_name,
+        business_summary: payload.business_summary,
+        steps: payload.steps || [],
+      };
       setWorkflow(wf);
       setWorkflowJson(JSON.stringify(wf, null, 2));
       setStepStatuses(wf.steps.map(() => ({ status: 'pending', duration_ms: null })));
       setGenState('ready');
-    }, 1200);
+      if (payload.meta) {
+        setModeInfo({
+          mock_mode: Boolean(payload.meta.mock_mode),
+          provider: String(payload.meta.provider || 'mock'),
+          model: String(payload.meta.model || 'rule-based'),
+        });
+      }
+      return;
+    } catch {
+      setApiError('Interpret API unavailable. Using local deterministic fallback.');
+    }
+
+    const wf = MOCK_WORKFLOWS[prompt.trim()] || getFallbackWorkflow(prompt.trim());
+    setWorkflow(wf);
+    setWorkflowJson(JSON.stringify(wf, null, 2));
+    setStepStatuses(wf.steps.map(() => ({ status: 'pending', duration_ms: null })));
+    setGenState('ready');
   }
 
-  function handleRun() {
+  async function handleRun() {
     if (runState === 'running' || genState !== 'ready') return;
     let wf;
     try { wf = JSON.parse(workflowJson); } catch { return; }
     setRunState('running');
     const initStatuses = wf.steps.map(() => ({ status: 'pending', duration_ms: null }));
     setStepStatuses(initStatuses);
-
-    simulateAIRun(
-      wf.steps,
-      (i, status, durations) => {
-        setStepStatuses(prev => prev.map((s, idx) => {
-          if (idx < i) return { status: 'completed', duration_ms: durations[idx] ?? s.duration_ms };
-          if (idx === i) return { status, duration_ms: durations[idx] ?? null };
-          return s;
-        }));
-      },
-      () => {
-        setRunState('done');
-        setRunSummary({ status: 'completed', duration_ms: Math.round(800 + Math.random() * 1200) });
+    try {
+      const started = Date.now();
+      const payload = await apiPost('/ai/run-graph', { workflow: wf });
+      const runIdValue = String(payload.id ?? Math.random().toString(36).slice(2, 10));
+      setRunId(runIdValue);
+      const runStatus = payload.status || 'completed';
+      const output = payload.output || {};
+      const steps = Array.isArray(output.steps) ? output.steps : [];
+      if (steps.length) {
+        setStepStatuses(
+          steps.map(s => ({
+            status: s.status || (runStatus === 'failed' ? 'failed' : 'completed'),
+            duration_ms: s.duration_ms ?? null,
+          }))
+        );
+      } else {
+        setStepStatuses(
+          wf.steps.map(() => ({
+            status: runStatus === 'failed' ? 'failed' : 'completed',
+            duration_ms: null,
+          }))
+        );
       }
-    );
+      setRunState('done');
+      setRunSummary({
+        status: runStatus,
+        duration_ms: Date.now() - started,
+      });
+      return;
+    } catch {
+      setApiError('Run API unavailable. Showing local simulated completion.');
+    }
+
+    const started = Date.now();
+    const fallbackStatuses = wf.steps.map((_, idx) => ({
+      status: 'completed',
+      duration_ms: 300 + idx * 120,
+    }));
+    setStepStatuses(fallbackStatuses);
+    setRunState('done');
+    setRunId(Math.random().toString(36).slice(2, 10));
+    setRunSummary({ status: 'completed', duration_ms: Date.now() - started });
   }
 
   const currentWorkflow = (() => { try { return JSON.parse(workflowJson); } catch { return null; } })();
@@ -164,6 +236,10 @@ function AIGenerator() {
             {runState === 'running' ? 'Running…' : 'Run workflow'}
           </KButton>
         </div>
+        <div style={{ fontSize: 11, color: KColors.fg3 }}>
+          Mode: {modeInfo.mock_mode ? 'mock' : `live (${modeInfo.provider}/${modeInfo.model})`}
+        </div>
+        {apiError && <div style={{ fontSize: 11, color: KColors.warning }}>{apiError}</div>}
 
         {/* Workflow card */}
         {workflow && (
@@ -222,7 +298,7 @@ function AIGenerator() {
 
                 {runSummary && (
                   <div style={{ padding: 12, background: KColors.overlay, border: `1px solid ${KColors.border}`, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 16 }}>
-                    <KPill status="completed">completed</KPill>
+                    <KPill status={runSummary.status}>{runSummary.status}</KPill>
                     <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 12, color: KColors.fg3 }}>Run ID: {runId}</span>
                     <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 12, color: KColors.fg3 }}>{runSummary.duration_ms} ms</span>
                   </div>
@@ -234,7 +310,7 @@ function AIGenerator() {
                     <KCodeBlock readOnly value={JSON.stringify({
                       run_id: runId,
                       workflow_name: workflow.workflow_name,
-                      status: 'completed',
+                      status: runSummary?.status || 'completed',
                       output: { steps_executed: workflow.steps.length, duration_ms: runSummary?.duration_ms },
                     }, null, 2)} minHeight={120}/>
                   </div>

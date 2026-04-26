@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlmodel import Session
 
@@ -11,7 +11,7 @@ from app.core.secrets_redact import redact_secrets_in_text
 from app.db.engine import get_engine
 from app.db.models import WorkflowRun, utcnow
 
-from app.ai.interpreter import interpret_request
+from app.ai.service import get_ai_service
 from app.engine.graph_runner import run_graph
 from app.engine.metrics import compute_run_metrics
 
@@ -38,8 +38,51 @@ class RunGraphRequest(BaseModel):
 
 
 @router.post("/interpret")
-def interpret(req: InterpretRequest):
-    return interpret_request(req.message)
+def interpret(req: InterpretRequest, settings: Settings = Depends(get_settings)):
+    try:
+        ai_service = get_ai_service(settings)
+        result = ai_service.generate_workflow(req.message)
+    except Exception as exc:
+        reason = redact_secrets_in_text(f"{type(exc).__name__}: {exc}", settings)
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "code": "AI_INTERPRET_FAILED",
+                "message": "AI workflow interpretation failed",
+                "details": {"reason": reason},
+            },
+        )
+    return {
+        **result.workflow,
+        "meta": {
+            "source": result.source,
+            "provider": result.provider,
+            "model": result.model,
+            "mock_mode": settings.mock_mode,
+        },
+    }
+
+
+@router.get("/capabilities")
+def capabilities(settings: Settings = Depends(get_settings)):
+    return {
+        "mock_mode": settings.mock_mode,
+        "provider": "mock" if settings.mock_mode else settings.ai_provider,
+        "model": "rule-based" if settings.mock_mode else settings.ai_model,
+    }
+
+
+@router.get("/config-status")
+def config_status(settings: Settings = Depends(get_settings)):
+    """Non-secret AI runtime diagnostics for pre-demo verification."""
+    return {
+        "mock_mode": settings.mock_mode,
+        "provider": "mock" if settings.mock_mode else settings.ai_provider,
+        "model": "rule-based" if settings.mock_mode else settings.ai_model,
+        "openai_api_key_configured": bool(settings.openai_api_key),
+        "openai_base_url": settings.openai_base_url,
+        "ai_timeout_seconds": settings.ai_timeout_seconds,
+    }
 
 
 @router.post("/run-graph")

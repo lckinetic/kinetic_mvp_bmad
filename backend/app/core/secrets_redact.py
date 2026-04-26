@@ -30,6 +30,7 @@ def _secret_substrings(settings: Settings) -> list[str]:
         settings.banxa_api_key,
         settings.banxa_api_secret,
         settings.banxa_webhook_secret,
+        settings.openai_api_key,
     ):
         if s and len(s.strip()) > 0:
             out.append(s)

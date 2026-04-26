@@ -1,5 +1,5 @@
 # generated: 2026-04-12T12:00:00Z
-# last_updated: 2026-04-26T16:10:00Z
+# last_updated: 2026-04-26T16:48:00Z
 # project: kinetic-mvp-bmad
 # project_key: NOKEY
 # tracking_system: file-system
@@ -24,7 +24,7 @@
 #   - done: Retrospective has been completed
 
 generated: "2026-04-12T12:00:00Z"
-last_updated: "2026-04-26T16:10:00Z"
+last_updated: "2026-04-26T16:48:00Z"
 project: kinetic-mvp-bmad
 project_key: NOKEY
 tracking_system: file-system
@@ -69,3 +69,9 @@ development_status:
   7-1-compose-stack-for-app-db: done
   7-2-ci-smoke-for-workflow-api: done
   epic-7-retrospective: done
+
+  epic-8: done
+  8-1-ai-mode-switching-capabilities: done
+  8-2-secret-safety-error-hardening: done
+  8-3-demo-ops-tooling-docs: done
+  epic-8-retrospective: optional

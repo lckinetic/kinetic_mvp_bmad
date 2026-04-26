@@ -14,6 +14,11 @@ def _bool(v: str | None, default: bool = False) -> bool:
 class Settings:
     database_url: str
     mock_mode: bool
+    ai_provider: str
+    ai_model: str
+    openai_api_key: str
+    openai_base_url: str
+    ai_timeout_seconds: float
 
     banxa_api_key: str
     banxa_api_secret: str
@@ -31,9 +36,14 @@ def get_settings() -> Settings:
     if not database_url:
         raise RuntimeError("DATABASE_URL is required (see backend/.env.example).")
 
-    return Settings(
+    settings = Settings(
         database_url=database_url,
         mock_mode=_bool(os.getenv("MOCK_MODE"), default=True),
+        ai_provider=os.getenv("AI_PROVIDER", "openai").strip().lower(),
+        ai_model=os.getenv("AI_MODEL", "gpt-4o-mini").strip(),
+        openai_api_key=os.getenv("OPENAI_API_KEY", "").strip(),
+        openai_base_url=os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/"),
+        ai_timeout_seconds=float(os.getenv("AI_TIMEOUT_SECONDS", "20")),
 
         banxa_api_key=os.getenv("BANXA_API_KEY", ""),
         banxa_api_secret=os.getenv("BANXA_API_SECRET", ""),
@@ -42,3 +52,11 @@ def get_settings() -> Settings:
 
         log_level=os.getenv("LOG_LEVEL", "INFO"),
     )
+    if not settings.mock_mode:
+        if settings.ai_provider != "openai":
+            raise RuntimeError("When MOCK_MODE=false, AI_PROVIDER must be 'openai'.")
+        if not settings.openai_api_key:
+            raise RuntimeError("When MOCK_MODE=false, OPENAI_API_KEY is required.")
+        if not settings.ai_model:
+            raise RuntimeError("When MOCK_MODE=false, AI_MODEL is required.")
+    return settings

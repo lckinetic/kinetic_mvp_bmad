@@ -6,7 +6,10 @@ This handoff summarizes where to start, what to demo, and current release-readin
 
 - Backend and UI MVP scope across Epics 1-7 is completed.
 - Core workflow, assistant, support inspection, onboarding, compose, CI smoke, and UI accessibility baseline are in place.
-- Latest consolidated smoke suite passed locally (`21 passed`).
+- Latest consolidated smoke suite passed locally (`25 passed`).
+- AI execution mode can now be switched via env:
+  - demo-safe mock mode
+  - live mode with real model/API key
 
 ## Start here
 

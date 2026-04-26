@@ -7,6 +7,9 @@ This is the canonical walkthrough for product demos after Epics 1-7 completion.
 - Backend is running locally (`MOCK_MODE=true`).
 - UI kit is served from `ui_kits/app/index.html` (or equivalent static host).
 - Optional: set `window.KINETIC_API_BASE` to target a different backend origin.
+- Pick one mode before demo:
+  - `cp backend/.env.mock.example backend/.env` for deterministic demo-safe mode
+  - `cp backend/.env.live.example backend/.env` for real AI calls
 
 ## Demo path (happy path)
 
@@ -22,6 +25,13 @@ This is the canonical walkthrough for product demos after Epics 1-7 completion.
 7. Open a recent run and confirm detail information is visible.
 8. Navigate to **Assistant** and generate a workflow from a prompt.
 9. Navigate to **Builder** and verify graph editing is reachable.
+
+## Optional live-AI segment
+
+1. Switch to live mode (`MOCK_MODE=false`) with valid `OPENAI_API_KEY`.
+2. Restart backend.
+3. In **Assistant**, submit a natural-language request and generate/run.
+4. Verify shell badge shows `LIVE AI` and model name.
 
 ## Accessibility sanity checks (during demo)
 

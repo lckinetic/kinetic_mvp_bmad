@@ -19,6 +19,11 @@ def _mk_settings(db_path: str) -> Settings:
     return Settings(
         database_url=f"sqlite:///{db_path}",
         mock_mode=True,
+        ai_provider="openai",
+        ai_model="gpt-4o-mini",
+        openai_api_key="",
+        openai_base_url="https://api.openai.com/v1",
+        ai_timeout_seconds=5.0,
         banxa_api_key="",
         banxa_api_secret="",
         banxa_env="sandbox",
