@@ -327,3 +327,15 @@ So that **the runner does not render a blank screen during MVP demos**.
 
 - **Given** the UI is served at `/ui-kit` or `/ui-kit/`, **when** the page loads, **then** all JSX component scripts are requested from stable absolute paths and return HTTP 200.
 - **And** **given** Templates -> Open in runner, **when** opening the runner view, **then** the app shell and runner content render without a blank screen regression.
+
+### Story 8.5: Builder node-linking visuals (UI-only enhancement)
+
+As a **demo user**,  
+I want **to draw linking arrows between workflow boxes on the Builder canvas**,  
+So that **the workflow path is visually understandable during demos even without backend persistence**.
+
+**Acceptance criteria**
+
+- **Given** the Builder page in demo mode, **when** I add two or more boxes and select a source/target pair, **then** a visible directional arrow is rendered between those boxes.
+- **And** **given** linked boxes, **when** I reposition linked nodes, **then** arrow positions update to remain connected to the correct nodes.
+- **And** **given** this is a UI-only enhancement, **when** links are created or removed, **then** no backend API calls are required for the interaction.

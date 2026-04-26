@@ -99,7 +99,13 @@ function CanvasNode({ node, selected, onMouseDown, onPortMouseDown, onPortMouseU
 }
 
 // ── Properties Panel ──────────────────────────────────
-function PropertiesPanel({ node, onParamChange, onDelete }) {
+function PropertiesPanel({ node, nodes, edges, onParamChange, onDelete, onAddEdge, onRemoveEdge }) {
+  const [targetNodeId, setTargetNodeId] = React.useState('');
+  const connectionTargetSelectId = React.useId();
+  React.useEffect(() => {
+    setTargetNodeId('');
+  }, [node?.id]);
+
   if (!node) return (
     <div style={{ width: 240, borderLeft: `1px solid ${KColors.border}`, padding: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center' }}>
@@ -109,6 +115,9 @@ function PropertiesPanel({ node, onParamChange, onDelete }) {
     </div>
   );
   const pm = PROVIDER_META[node.provider] || PROVIDER_META.engine;
+  const outgoingEdges = edges.filter(e => e.from === node.id);
+  const connectedTargetIds = new Set(outgoingEdges.map(e => e.to));
+  const availableTargets = nodes.filter(n => n.id !== node.id && !connectedTargetIds.has(n.id));
   return (
     <div style={{ width: 240, borderLeft: `1px solid ${KColors.border}`, padding: 16, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
       <div>
@@ -133,6 +142,95 @@ function PropertiesPanel({ node, onParamChange, onDelete }) {
         ))}
         {Object.keys(node.params).length === 0 && (
           <div style={{ fontSize: 12, color: KColors.fg3 }}>No parameters.</div>
+        )}
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <KSectionLabel>Connections</KSectionLabel>
+        <label
+          htmlFor={connectionTargetSelectId}
+          style={{ fontSize: 11, color: KColors.fg3, marginBottom: -4 }}
+        >
+          Target step
+        </label>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <select
+            id={connectionTargetSelectId}
+            value={targetNodeId}
+            onChange={e => setTargetNodeId(e.target.value)}
+            style={{
+              flex: 1,
+              background: KColors.overlay,
+              color: KColors.fg1,
+              border: `1px solid ${KColors.border}`,
+              borderRadius: 6,
+              padding: '6px 8px',
+              fontSize: 12,
+              outline: 'none',
+              fontFamily: 'inherit',
+            }}
+          >
+            <option value="">Select target step</option>
+            {availableTargets.map(target => (
+              <option key={target.id} value={target.id}>
+                {target.label}
+              </option>
+            ))}
+          </select>
+          <KButton
+            size="sm"
+            onClick={() => {
+              if (!targetNodeId) return;
+              onAddEdge(node.id, targetNodeId);
+              setTargetNodeId('');
+            }}
+            disabled={!targetNodeId}
+          >
+            Link
+          </KButton>
+        </div>
+        {outgoingEdges.length === 0 ? (
+          <div style={{ fontSize: 12, color: KColors.fg3 }}>No outgoing links.</div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {outgoingEdges.map(edge => {
+              const target = nodes.find(n => n.id === edge.to);
+              return (
+                <div
+                  key={edge.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 6,
+                    background: KColors.overlay,
+                    border: `1px solid ${KColors.border}`,
+                    borderRadius: 6,
+                    padding: '6px 8px',
+                  }}
+                >
+                  <div style={{ fontSize: 12, color: KColors.fg2, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    -> {target?.label || edge.to}
+                  </div>
+                  <button
+                    onClick={() => onRemoveEdge(edge.id)}
+                    aria-label={`Remove link to ${target?.label || edge.to}`}
+                    style={{
+                      background: 'transparent',
+                      color: KColors.error,
+                      border: `1px solid rgba(220,38,38,0.3)`,
+                      borderRadius: 4,
+                      padding: '2px 6px',
+                      fontSize: 11,
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                    }}
+                  >
+                    Remove
+                  </button>
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
       <div style={{ marginTop: 'auto' }}>
@@ -323,6 +421,19 @@ function WorkflowBuilder() {
     setNodes(prev => prev.map(n => n.id === nodeId ? { ...n, params: { ...n.params, [key]: val } } : n));
   }
 
+  function addEdge(fromId, toId) {
+    if (!fromId || !toId || fromId === toId) return;
+    setEdges(prev => {
+      const duplicate = prev.some(e => e.from === fromId && e.to === toId);
+      if (duplicate) return prev;
+      return [...prev, { id: `edge_${edgeIdCounter++}`, from: fromId, to: toId }];
+    });
+  }
+
+  function removeEdge(edgeId) {
+    setEdges(prev => prev.filter(e => e.id !== edgeId));
+  }
+
   function exportJSON() {
     const workflow = {
       workflow_name: workflowName,
@@ -460,8 +571,12 @@ function WorkflowBuilder() {
           {/* Right properties panel */}
           <PropertiesPanel
             node={selectedNode}
+            nodes={nodes}
+            edges={edges}
             onParamChange={handleParamChange}
             onDelete={deleteSelected}
+            onAddEdge={addEdge}
+            onRemoveEdge={removeEdge}
           />
         </div>
 
