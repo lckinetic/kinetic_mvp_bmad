@@ -1,0 +1,128 @@
+# Local Onboarding (Canonical Path)
+
+This is the single recommended onboarding path for running Kinetic MVP locally in backend-first mode.
+
+## Prerequisites
+
+- Python 3.11+
+- Docker Desktop (or equivalent Docker runtime)
+
+## 1) Start Postgres
+
+From repo root:
+
+```bash
+docker compose -f infra/docker-compose.yml up -d
+docker compose -f infra/docker-compose.yml ps
+```
+
+Expected: `postgres` is running and healthy.
+
+## 2) Create and activate virtual environment
+
+From repo root:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+## 3) Install backend + dev dependencies
+
+From repo root:
+
+```bash
+python -m pip install --upgrade pip
+python -m pip install -e "backend[dev]"
+```
+
+## 4) Configure environment
+
+Create `backend/.env` with:
+
+```dotenv
+DATABASE_URL=postgresql+psycopg2://kinetic:kinetic@localhost:5432/kinetic
+MOCK_MODE=true
+BANXA_API_KEY=replace_me
+BANXA_API_SECRET=replace_me
+BANXA_ENV=sandbox
+BANXA_WEBHOOK_SECRET=replace_me
+LOG_LEVEL=INFO
+```
+
+Notes:
+- Keep `MOCK_MODE=true` for safe local demos.
+- Never use production secrets in local files.
+
+## 5) Start API
+
+From repo root:
+
+```bash
+source .venv/bin/activate
+python -m uvicorn app.main:app --reload --app-dir backend
+```
+
+## 6) Verify health and docs
+
+In another terminal:
+
+```bash
+curl http://127.0.0.1:8000/health
+```
+
+Open:
+- `http://127.0.0.1:8000/docs`
+
+Expected health response:
+
+```json
+{"status":"ok"}
+```
+
+## 7) MOCK_MODE demo path
+
+### Prebuilt workflow flow
+
+```bash
+curl http://127.0.0.1:8000/workflows/templates
+curl -X POST "http://127.0.0.1:8000/workflows/run/managed_treasury" -H "Content-Type: application/json" -d '{"input":{"user_email":"demo@example.com","trade_symbol":"BTC-USD","trade_amount":100}}'
+curl http://127.0.0.1:8000/workflows/runs
+```
+
+### Assistant flow
+
+```bash
+curl -X POST "http://127.0.0.1:8000/assistant/proposals" -H "Content-Type: application/json" -d '{"message":"Fund wallet with USDC","session_id":"onboarding-demo"}'
+curl -X POST "http://127.0.0.1:8000/assistant/proposals/<proposal_id>/confirm"
+curl -X POST "http://127.0.0.1:8000/assistant/proposals/<proposal_id>/execute"
+curl "http://127.0.0.1:8000/assistant/proposals/<proposal_id>/ui-handoff"
+```
+
+## 8) Verify tests
+
+From repo root:
+
+```bash
+source .venv/bin/activate
+python -m pytest backend/app/tests/test_workflows_openapi.py backend/app/tests/test_assistant_openapi.py -q
+```
+
+## Troubleshooting
+
+- **`ModuleNotFoundError: sqlmodel`**
+  - Activate venv and reinstall editable backend package:
+  - `source .venv/bin/activate && python -m pip install -e "backend[dev]"`
+
+- **DB connection errors on startup**
+  - Confirm Postgres container is healthy:
+  - `docker compose -f infra/docker-compose.yml ps`
+  - Verify `DATABASE_URL` in `backend/.env`.
+
+- **Port 8000 already in use**
+  - Stop previous server process or run with a different port:
+  - `python -m uvicorn app.main:app --reload --app-dir backend --port 8001`
+
+- **`/health` fails but server appears started**
+  - Check logs for DB init failures.
+  - Ensure Docker postgres is reachable on `localhost:5432`.

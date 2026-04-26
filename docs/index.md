@@ -15,6 +15,7 @@ Kinetic MVP is a **FastAPI** backend for **crypto on/off-ramp** flows, **webhook
 | Product scope | [`overview.md`](./overview.md) |
 | Architecture (short) | [`architecture.md`](./architecture.md) |
 | Architecture principles (guardrails) | [`ai/architecture-principles.md`](./ai/architecture-principles.md) |
+| Local onboarding (canonical path) | [`onboarding-local.md`](./onboarding-local.md) |
 | Onramp | [`onramp.md`](./onramp.md) |
 | Offramp feature notes | [`features/offramp-mvp.md`](./features/offramp-mvp.md) |
 | Mock mode ADR | [`adr-001-mock-mode.md`](./adr-001-mock-mode.md) |
@@ -38,10 +39,9 @@ Kinetic MVP is a **FastAPI** backend for **crypto on/off-ramp** flows, **webhook
 
 ## Getting started
 
-1. Copy env: use `backend/.env.example` if present, or set **`DATABASE_URL`**, **`MOCK_MODE`**, and provider keys as needed.
-2. Start Postgres: `infra/docker-compose.yml` (adjust ports/creds to match `DATABASE_URL`).
-3. From **`backend/`**: install `pyproject.toml`, then `uvicorn app.main:app --reload`.
-4. Open **`/docs`** for OpenAPI; use Postman collections under **`docs/postman/`**.
+1. Follow [`onboarding-local.md`](./onboarding-local.md) end-to-end.
+2. Keep `MOCK_MODE=true` for local demos.
+3. Open **`/docs`** for OpenAPI; use Postman collections under **`docs/postman/`**.
 
 ## For AI-assisted development
 

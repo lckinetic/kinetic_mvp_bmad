@@ -1,5 +1,9 @@
 # Kinetic MVP – Development & Agent Operating Guide
 
+## Local Setup (Canonical)
+
+Use `docs/onboarding-local.md` as the single source of truth for local setup, MOCK_MODE demo flow, and troubleshooting.
+
 ## 1. Purpose of This Repository
 
 This repository contains the **local-first MVP implementation of Kinetic**.
