@@ -363,3 +363,14 @@ So that **stakeholders can immediately see end-to-end orchestration patterns wit
 - **Given** the Builder page loads, **when** the canvas initializes, **then** it includes a default multi-step workflow that uses all supported palette component types.
 - **And** **given** default links on that workflow, **when** inspecting connections, **then** they include both `always` and `conditional` trigger examples.
 - **And** **given** export JSON action, **when** data is copied, **then** the default workflow name and trigger metadata are present for demo playback.
+
+### Story 8.8: Navigation naming alignment for demo IA
+
+As a **demo stakeholder**,  
+I want **the main navigation labels to match business language**,  
+So that **screen names are clearer during walkthroughs and reduce translation overhead**.
+
+**Acceptance criteria**
+
+- **Given** the primary app navigation, **when** the UI renders, **then** the four labels are `Workflows`, `Operations`, `AI Assistant`, and `Workflow Builder`.
+- **And** **given** route transitions, **when** navigating between tabs, **then** display-name changes do not alter route identifiers or break existing navigation behavior.
