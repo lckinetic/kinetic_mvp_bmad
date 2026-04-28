@@ -39,6 +39,18 @@ function makeNode(type, x, y) {
   };
 }
 
+function makeEdge(from, to) {
+  return {
+    id: `edge_${edgeIdCounter++}`,
+    from,
+    to,
+    trigger: {
+      mode: 'always',
+      expression: '',
+    },
+  };
+}
+
 // ── Port dot ──────────────────────────────────────────
 function Port({ kind, nodeId, onPortMouseDown, onPortMouseUp, active }) {
   const size = 10;
@@ -105,7 +117,7 @@ function CanvasNode({ node, selected, onMouseDown, onPortMouseDown, onPortMouseU
 }
 
 // ── Properties Panel ──────────────────────────────────
-function PropertiesPanel({ node, nodes, edges, onParamChange, onDelete, onAddEdge, onRemoveEdge }) {
+function PropertiesPanel({ node, nodes, edges, onParamChange, onDelete, onAddEdge, onRemoveEdge, onUpdateEdgeTrigger }) {
   const [targetNodeId, setTargetNodeId] = React.useState('');
   const connectionTargetSelectId = React.useId();
   React.useEffect(() => {
@@ -200,39 +212,79 @@ function PropertiesPanel({ node, nodes, edges, onParamChange, onDelete, onAddEdg
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {outgoingEdges.map(edge => {
               const target = nodes.find(n => n.id === edge.to);
+              const triggerMode = edge.trigger?.mode || 'always';
+              const triggerExpression = edge.trigger?.expression || '';
               return (
                 <div
                   key={edge.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 6,
-                    background: KColors.overlay,
-                    border: `1px solid ${KColors.border}`,
-                    borderRadius: 6,
-                    padding: '6px 8px',
-                  }}
+                  style={{ background: KColors.overlay, border: `1px solid ${KColors.border}`, borderRadius: 6, padding: '6px 8px' }}
                 >
-                  <div style={{ fontSize: 12, color: KColors.fg2, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    -> {target?.label || edge.to}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+                    <div style={{ fontSize: 12, color: KColors.fg2, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      -> {target?.label || edge.to}
+                    </div>
+                    <button
+                      onClick={() => onRemoveEdge(edge.id)}
+                      aria-label={`Remove link to ${target?.label || edge.to}`}
+                      style={{
+                        background: 'transparent',
+                        color: KColors.error,
+                        border: `1px solid rgba(220,38,38,0.3)`,
+                        borderRadius: 4,
+                        padding: '2px 6px',
+                        fontSize: 11,
+                        cursor: 'pointer',
+                        fontFamily: 'inherit',
+                      }}
+                    >
+                      Remove
+                    </button>
                   </div>
-                  <button
-                    onClick={() => onRemoveEdge(edge.id)}
-                    aria-label={`Remove link to ${target?.label || edge.to}`}
-                    style={{
-                      background: 'transparent',
-                      color: KColors.error,
-                      border: `1px solid rgba(220,38,38,0.3)`,
-                      borderRadius: 4,
-                      padding: '2px 6px',
-                      fontSize: 11,
-                      cursor: 'pointer',
-                      fontFamily: 'inherit',
-                    }}
-                  >
-                    Remove
-                  </button>
+                  <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+                    <select
+                      value={triggerMode}
+                      onChange={e => onUpdateEdgeTrigger(edge.id, {
+                        mode: e.target.value,
+                        expression: e.target.value === 'conditional' ? triggerExpression : '',
+                      })}
+                      style={{
+                        width: 110,
+                        background: KColors.overlay,
+                        color: KColors.fg1,
+                        border: `1px solid ${KColors.border}`,
+                        borderRadius: 6,
+                        padding: '5px 6px',
+                        fontSize: 11,
+                        fontFamily: 'inherit',
+                      }}
+                    >
+                      <option value="always">Always</option>
+                      <option value="conditional">Conditional</option>
+                    </select>
+                    {triggerMode === 'conditional' && (
+                      <input
+                        value={triggerExpression}
+                        onChange={e => onUpdateEdgeTrigger(edge.id, {
+                          mode: 'conditional',
+                          expression: e.target.value,
+                        })}
+                        placeholder="e.g. amount > 1000"
+                        style={{
+                          flex: 1,
+                          background: KColors.overlay,
+                          color: KColors.fg1,
+                          border: `1px solid ${KColors.border}`,
+                          borderRadius: 6,
+                          padding: '5px 8px',
+                          fontSize: 11,
+                          fontFamily: 'IBM Plex Mono, monospace',
+                        }}
+                      />
+                    )}
+                  </div>
+                  <div style={{ fontSize: 10, color: KColors.fg3, marginTop: 4 }}>
+                    Trigger: {triggerMode === 'always' ? 'always on success' : (triggerExpression || 'conditional (set rule)')}
+                  </div>
                 </div>
               );
             })}
@@ -273,11 +325,31 @@ function EdgeLayer({ nodes, edges, pendingEdge }) {
       {edges.map(edge => {
         const from = getPortPos(edge.from, 'output');
         const to   = getPortPos(edge.to,   'input');
+        const triggerText = edge.trigger?.mode === 'conditional'
+          ? (edge.trigger?.expression || '?')
+          : 'always';
+        const midX = (from.x + to.x) / 2;
+        const midY = (from.y + to.y) / 2;
         return (
-          <path key={edge.id} d={bezier(from.x, from.y, to.x, to.y)}
-            stroke={KColors.primaryLight} strokeWidth="1.5" fill="none" opacity="0.7"
-            markerEnd="url(#arrowhead)"
-          />
+          <g key={edge.id}>
+            <path d={bezier(from.x, from.y, to.x, to.y)}
+              stroke={KColors.primaryLight} strokeWidth="1.5" fill="none" opacity="0.7"
+              markerEnd="url(#arrowhead)"
+            />
+            <text
+              x={midX}
+              y={midY - 6}
+              textAnchor="middle"
+              style={{
+                fill: KColors.fg3,
+                fontSize: 10,
+                fontFamily: 'IBM Plex Mono, monospace',
+                userSelect: 'none',
+              }}
+            >
+              {triggerText}
+            </text>
+          </g>
         );
       })}
       {pendingEdge && (
@@ -311,8 +383,8 @@ function WorkflowBuilder() {
     makeNode('coinbase.withdraw', 560, 120),
   ]);
   const [edges, setEdges] = React.useState([
-    { id: `edge_${edgeIdCounter++}`, from: 'node_1', to: 'node_2' },
-    { id: `edge_${edgeIdCounter++}`, from: 'node_2', to: 'node_3' },
+    makeEdge('node_1', 'node_2'),
+    makeEdge('node_2', 'node_3'),
   ]);
   const [selectedId, setSelectedId] = React.useState(null);
   const [draggingNode, setDraggingNode] = React.useState(null);
@@ -355,7 +427,7 @@ function WorkflowBuilder() {
     if (connectingFrom && connectingFrom !== targetId) {
       const already = edges.find(e => e.from === connectingFrom && e.to === targetId);
       if (!already) {
-        setEdges(prev => [...prev, { id: `edge_${edgeIdCounter++}`, from: connectingFrom, to: targetId }]);
+        setEdges(prev => [...prev, makeEdge(connectingFrom, targetId)]);
       }
     }
     setConnectingFrom(null);
@@ -436,12 +508,26 @@ function WorkflowBuilder() {
     setEdges(prev => {
       const duplicate = prev.some(e => e.from === fromId && e.to === toId);
       if (duplicate) return prev;
-      return [...prev, { id: `edge_${edgeIdCounter++}`, from: fromId, to: toId }];
+      return [...prev, makeEdge(fromId, toId)];
     });
   }
 
   function removeEdge(edgeId) {
     setEdges(prev => prev.filter(e => e.id !== edgeId));
+  }
+
+  function updateEdgeTrigger(edgeId, triggerPatch) {
+    setEdges(prev => prev.map(edge => {
+      if (edge.id !== edgeId) return edge;
+      const nextMode = triggerPatch.mode || 'always';
+      return {
+        ...edge,
+        trigger: {
+          mode: nextMode,
+          expression: nextMode === 'conditional' ? (triggerPatch.expression || '') : '',
+        },
+      };
+    }));
   }
 
   function exportJSON() {
@@ -450,6 +536,13 @@ function WorkflowBuilder() {
       steps: nodes.map((n, i) => ({
         id: n.id, seq: i + 1, type: n.type, params: n.params,
         depends_on: edges.filter(e => e.to === n.id).map(e => e.from),
+        outbound_triggers: edges
+          .filter(e => e.from === n.id)
+          .map(e => ({
+            to: e.to,
+            mode: e.trigger?.mode || 'always',
+            expression: e.trigger?.mode === 'conditional' ? (e.trigger?.expression || '') : '',
+          })),
       })),
     };
     return JSON.stringify(workflow, null, 2);
@@ -588,6 +681,7 @@ function WorkflowBuilder() {
             onDelete={deleteSelected}
             onAddEdge={addEdge}
             onRemoveEdge={removeEdge}
+            onUpdateEdgeTrigger={updateEdgeTrigger}
           />
         </div>
 
