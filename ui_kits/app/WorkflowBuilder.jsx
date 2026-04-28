@@ -60,11 +60,17 @@ function Port({ kind, nodeId, onPortMouseDown, onPortMouseUp, active }) {
 }
 
 // ── Canvas Node ───────────────────────────────────────
-function CanvasNode({ node, selected, onMouseDown, onPortMouseDown, onPortMouseUp, connectingFrom }) {
+function CanvasNode({ node, selected, onMouseDown, onPortMouseDown, onPortMouseUp, onNodeMouseUp, connectingFrom }) {
   const pm = PROVIDER_META[node.provider] || PROVIDER_META.engine;
   return (
     <div
       onMouseDown={e => onMouseDown(node.id, e)}
+      onMouseUp={e => {
+        if (connectingFrom && connectingFrom !== node.id) {
+          e.stopPropagation();
+          onNodeMouseUp && onNodeMouseUp(node.id);
+        }
+      }}
       style={{
         position: 'absolute', left: node.x, top: node.y,
         width: 180, userSelect: 'none', cursor: 'grab',
@@ -356,6 +362,10 @@ function WorkflowBuilder() {
     setPendingEdge(null);
   }
 
+  function handleNodeMouseUp(targetId) {
+    handlePortMouseUp(targetId);
+  }
+
   function handlePaletteDragStart(type, e) {
     e.preventDefault();
     setDraggingPalette({ type, curX: e.clientX, curY: e.clientY });
@@ -541,6 +551,7 @@ function WorkflowBuilder() {
                 onMouseDown={handleNodeMouseDown}
                 onPortMouseDown={handlePortMouseDown}
                 onPortMouseUp={handlePortMouseUp}
+                onNodeMouseUp={handleNodeMouseUp}
                 connectingFrom={connectingFrom}
               />
             ))}
