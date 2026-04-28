@@ -351,3 +351,15 @@ So that **the config panel behavior feels predictable and demo expectations are 
 - **Given** a node is added from the palette via drag/drop or keyboard add, **when** it appears on the canvas, **then** the node remains selected and its configuration panel is visible.
 - **And** **given** a drop/link interaction just completed, **when** the next click event occurs, **then** selection is not immediately cleared by accidental click bubbling.
 - **And** **given** app navigation and page header labels, **when** Builder is shown, **then** it is labeled as `Builder (mock)`.
+
+### Story 8.7: Builder default showcase workflow with logic
+
+As a **demo operator**,  
+I want **Builder to open with a prebuilt workflow covering all supported mock components and trigger logic**,  
+So that **stakeholders can immediately see end-to-end orchestration patterns without manual setup**.
+
+**Acceptance criteria**
+
+- **Given** the Builder page loads, **when** the canvas initializes, **then** it includes a default multi-step workflow that uses all supported palette component types.
+- **And** **given** default links on that workflow, **when** inspecting connections, **then** they include both `always` and `conditional` trigger examples.
+- **And** **given** export JSON action, **when** data is copied, **then** the default workflow name and trigger metadata are present for demo playback.

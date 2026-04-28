@@ -51,6 +51,55 @@ function makeEdge(from, to) {
   };
 }
 
+function buildDefaultDemoWorkflow() {
+  const nodes = [
+    makeNode('privy.create_wallet', 70, 70),
+    makeNode('banxa.onramp', 290, 70),
+    makeNode('coinbase.buy', 510, 70),
+    makeNode('engine.condition', 730, 70),
+    makeNode('coinbase.withdraw', 950, 70),
+    makeNode('engine.delay', 730, 210),
+    makeNode('privy.deposit', 950, 210),
+    makeNode('coinbase.sell', 510, 210),
+    makeNode('banxa.offramp', 290, 210),
+    makeNode('engine.ai_interpret', 70, 210),
+  ];
+
+  // Add a realistic expression to the condition step for demo clarity.
+  const conditionNode = nodes.find(n => n.type === 'engine.condition');
+  if (conditionNode) {
+    conditionNode.params = {
+      ...conditionNode.params,
+      expression: 'portfolio_usd >= 5000',
+    };
+  }
+
+  const byType = type => nodes.find(n => n.type === type);
+  const alwaysEdge = (fromType, toType) => makeEdge(byType(fromType).id, byType(toType).id);
+  const conditionalEdge = (fromType, toType, expression) => ({
+    ...makeEdge(byType(fromType).id, byType(toType).id),
+    trigger: { mode: 'conditional', expression },
+  });
+
+  const edges = [
+    alwaysEdge('privy.create_wallet', 'banxa.onramp'),
+    alwaysEdge('banxa.onramp', 'coinbase.buy'),
+    alwaysEdge('coinbase.buy', 'engine.condition'),
+    conditionalEdge('engine.condition', 'coinbase.withdraw', 'risk_score < 0.4'),
+    conditionalEdge('engine.condition', 'engine.delay', 'risk_score >= 0.4'),
+    alwaysEdge('engine.delay', 'privy.deposit'),
+    conditionalEdge('coinbase.buy', 'coinbase.sell', 'take_profit_pct >= 8'),
+    alwaysEdge('coinbase.sell', 'banxa.offramp'),
+    conditionalEdge('banxa.offramp', 'engine.ai_interpret', 'compliance_check = true'),
+  ];
+
+  return {
+    workflowName: 'demo_treasury_orchestration',
+    nodes,
+    edges,
+  };
+}
+
 // ── Port dot ──────────────────────────────────────────
 function Port({ kind, nodeId, onPortMouseDown, onPortMouseUp, active }) {
   const size = 10;
@@ -377,21 +426,15 @@ function DotGrid() {
 
 // ── Main Builder ──────────────────────────────────────
 function WorkflowBuilder() {
-  const [nodes, setNodes] = React.useState([
-    makeNode('banxa.onramp', 80, 120),
-    makeNode('coinbase.buy', 320, 120),
-    makeNode('coinbase.withdraw', 560, 120),
-  ]);
-  const [edges, setEdges] = React.useState([
-    makeEdge('node_1', 'node_2'),
-    makeEdge('node_2', 'node_3'),
-  ]);
+  const defaultDemoWorkflow = React.useMemo(() => buildDefaultDemoWorkflow(), []);
+  const [nodes, setNodes] = React.useState(defaultDemoWorkflow.nodes);
+  const [edges, setEdges] = React.useState(defaultDemoWorkflow.edges);
   const [selectedId, setSelectedId] = React.useState(null);
   const [draggingNode, setDraggingNode] = React.useState(null);
   const [draggingPalette, setDraggingPalette] = React.useState(null);
   const [connectingFrom, setConnectingFrom] = React.useState(null);
   const [pendingEdge, setPendingEdge] = React.useState(null);
-  const [workflowName, setWorkflowName] = React.useState('my_workflow');
+  const [workflowName, setWorkflowName] = React.useState(defaultDemoWorkflow.workflowName);
   const [exported, setExported] = React.useState(false);
   const canvasRef = React.useRef(null);
   const suppressCanvasClickRef = React.useRef(false);

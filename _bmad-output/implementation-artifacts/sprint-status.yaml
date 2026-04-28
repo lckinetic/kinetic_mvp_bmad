@@ -1,5 +1,5 @@
 # generated: 2026-04-12T12:00:00Z
-# last_updated: 2026-04-28T19:08:00Z
+# last_updated: 2026-04-28T20:25:00Z
 # project: kinetic-mvp-bmad
 # project_key: NOKEY
 # tracking_system: file-system
@@ -24,7 +24,7 @@
 #   - done: Retrospective has been completed
 
 generated: "2026-04-12T12:00:00Z"
-last_updated: "2026-04-28T19:08:00Z"
+last_updated: "2026-04-28T20:25:00Z"
 project: kinetic-mvp-bmad
 project_key: NOKEY
 tracking_system: file-system
@@ -77,4 +77,5 @@ development_status:
   8-4-ui-kit-static-path-hardening: done
   8-5-builder-node-linking-visuals-ui-only-enhancement: done
   8-6-builder-usability-polish-and-mock-labeling: done
+  8-7-builder-default-showcase-workflow-with-logic: done
   epic-8-retrospective: optional
