@@ -690,7 +690,9 @@ function WorkflowBuilder() {
           <div
             ref={canvasRef}
             style={{ flex: 1, position: 'relative', overflow: 'hidden', background: KColors.sunken, cursor: connectingFrom ? 'crosshair' : 'default' }}
-            onClick={() => {
+            onClick={(e) => {
+              // Only clear selection when the user clicks empty canvas space.
+              if (e.target !== e.currentTarget) return;
               if (suppressCanvasClickRef.current) {
                 suppressCanvasClickRef.current = false;
                 return;

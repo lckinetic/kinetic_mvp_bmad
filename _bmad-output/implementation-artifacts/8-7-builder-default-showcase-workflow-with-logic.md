@@ -28,6 +28,7 @@ So that **stakeholders can immediately see end-to-end orchestration patterns wit
 - Seeded default edges with both `always` and `conditional` trigger logic and sample expressions.
 - Set the Builder default workflow name to `demo_treasury_orchestration`.
 - Updated initial Builder state to load from the default demo workflow scaffold at page load.
+- Added follow-up click-selection hardening so node configuration remains visible when clicking a demo node (canvas deselect now triggers only on true empty-canvas clicks).
 
 ## File list
 
@@ -37,3 +38,5 @@ So that **stakeholders can immediately see end-to-end orchestration patterns wit
 
 - **2026-04-28** - Story 8.7 created and implementation captured; status -> review.
 - **2026-04-28** - Code review completed; status -> done.
+- **2026-04-28** - Added follow-up fix for demo-node click selection regression in Builder configuration panel visibility.
+- **2026-04-28** - Follow-up code review completed for the click-selection hardening update.
