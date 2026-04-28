@@ -339,3 +339,15 @@ So that **the workflow path is visually understandable during demos even without
 - **Given** the Builder page in demo mode, **when** I add two or more boxes and select a source/target pair, **then** a visible directional arrow is rendered between those boxes.
 - **And** **given** linked boxes, **when** I reposition linked nodes, **then** arrow positions update to remain connected to the correct nodes.
 - **And** **given** this is a UI-only enhancement, **when** links are created or removed, **then** no backend API calls are required for the interaction.
+
+### Story 8.6: Builder usability polish and mock labeling
+
+As a **demo user**,  
+I want **newly dropped nodes to reliably stay selected and clearly see that Builder is mock-only**,  
+So that **the config panel behavior feels predictable and demo expectations are set correctly**.
+
+**Acceptance criteria**
+
+- **Given** a node is added from the palette via drag/drop or keyboard add, **when** it appears on the canvas, **then** the node remains selected and its configuration panel is visible.
+- **And** **given** a drop/link interaction just completed, **when** the next click event occurs, **then** selection is not immediately cleared by accidental click bubbling.
+- **And** **given** app navigation and page header labels, **when** Builder is shown, **then** it is labeled as `Builder (mock)`.

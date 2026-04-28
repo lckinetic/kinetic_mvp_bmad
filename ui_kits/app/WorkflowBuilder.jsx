@@ -394,14 +394,25 @@ function WorkflowBuilder() {
   const [workflowName, setWorkflowName] = React.useState('my_workflow');
   const [exported, setExported] = React.useState(false);
   const canvasRef = React.useRef(null);
+  const suppressCanvasClickRef = React.useRef(false);
 
   const selectedNode = nodes.find(n => n.id === selectedId) || null;
+
+  function suppressNextCanvasClick() {
+    suppressCanvasClickRef.current = true;
+    window.setTimeout(() => {
+      suppressCanvasClickRef.current = false;
+    }, 0);
+  }
 
   function addNodeFromPalette(type) {
     const index = nodes.length;
     const x = 80 + (index % 3) * 220;
     const y = 90 + Math.floor(index / 3) * 110;
-    setNodes(prev => [...prev, makeNode(type, x, y)]);
+    const createdNode = makeNode(type, x, y);
+    setNodes(prev => [...prev, createdNode]);
+    setSelectedId(createdNode.id);
+    suppressNextCanvasClick();
   }
 
   function handleNodeMouseDown(nodeId, e) {
@@ -429,6 +440,7 @@ function WorkflowBuilder() {
       if (!already) {
         setEdges(prev => [...prev, makeEdge(connectingFrom, targetId)]);
       }
+      suppressNextCanvasClick();
     }
     setConnectingFrom(null);
     setPendingEdge(null);
@@ -469,7 +481,10 @@ function WorkflowBuilder() {
         const x = e.clientX - r.left - 90;
         const y = e.clientY - r.top - 31;
         if (x > 0 && y > 0 && x < r.width - 180 && y < r.height - 62) {
-          setNodes(prev => [...prev, makeNode(draggingPalette.type, x, y)]);
+          const createdNode = makeNode(draggingPalette.type, x, y);
+          setNodes(prev => [...prev, createdNode]);
+          setSelectedId(createdNode.id);
+          suppressNextCanvasClick();
         }
         setDraggingPalette(null);
       }
@@ -632,7 +647,13 @@ function WorkflowBuilder() {
           <div
             ref={canvasRef}
             style={{ flex: 1, position: 'relative', overflow: 'hidden', background: KColors.sunken, cursor: connectingFrom ? 'crosshair' : 'default' }}
-            onClick={() => { if (!draggingNode) setSelectedId(null); }}
+            onClick={() => {
+              if (suppressCanvasClickRef.current) {
+                suppressCanvasClickRef.current = false;
+                return;
+              }
+              if (!draggingNode && !draggingPalette) setSelectedId(null);
+            }}
           >
             <DotGrid/>
             <EdgeLayer nodes={nodes} edges={edges} pendingEdge={pendingEdge}/>

@@ -24,3 +24,12 @@ def test_builder_connection_handlers_exist_and_are_wired() -> None:
     assert "function removeEdge(edgeId) {" in content
     assert "onAddEdge={addEdge}" in content
     assert "onRemoveEdge={removeEdge}" in content
+
+
+def test_builder_post_drop_click_suppression_wiring_is_present() -> None:
+    content = _builder_jsx()
+    assert "const suppressCanvasClickRef = React.useRef(false);" in content
+    assert "function suppressNextCanvasClick() {" in content
+    assert "setSelectedId(createdNode.id);" in content
+    assert "suppressNextCanvasClick();" in content
+    assert "if (suppressCanvasClickRef.current) {" in content
