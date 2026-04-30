@@ -25,7 +25,7 @@ services:
     profiles: ["app"]
     build:
       context: ../
-      dockerfile: backend/Dockerfile
+      dockerfile: backend/Dockerfile.local
     env_file:
       - ../backend/.env
     environment:
