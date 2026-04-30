@@ -374,3 +374,15 @@ So that **screen names are clearer during walkthroughs and reduce translation ov
 
 - **Given** the primary app navigation, **when** the UI renders, **then** the four labels are `Workflows`, `Operations`, `AI Assistant`, and `Workflow Builder`.
 - **And** **given** route transitions, **when** navigating between tabs, **then** display-name changes do not alter route identifiers or break existing navigation behavior.
+
+### Story 8.9: Home landing alignment to latest design system
+
+As an **investor-demo audience member**,  
+I want **the Home landing page to match the latest approved design-system homepage**,  
+So that **Kinetic's narrative, visual quality, and walkthrough guidance are consistent with the investor deck**.
+
+**Acceptance criteria**
+
+- **Given** app load on Home, **when** the page renders, **then** content and layout follow the latest `kinetic-design-system` homepage design for hero, problem/solution, architecture, use cases, and roadmap.
+- **And** **given** Home CTAs and screen cards, **when** users click them, **then** navigation routes to existing app pages without modifying those pages.
+- **And** **given** scope control, **when** this story is implemented, **then** only Home is changed while Workflows, Operations, AI Assistant, and Workflow Builder remain functionally unchanged.

@@ -51,12 +51,20 @@
 <div id="root"></div>
 
 <script type="text/babel" src="/ui-kit/Components.jsx"></script>
+<script type="text/babel" src="/ui-kit/Home.jsx"></script>
 <script type="text/babel" src="/ui-kit/WorkflowRunner.jsx"></script>
 <script type="text/babel" src="/ui-kit/AIGenerator.jsx"></script>
 <script type="text/babel" src="/ui-kit/WorkflowBuilder.jsx"></script>
 
 <script type="text/babel">
 const APP_ROUTES = [
+  {
+    id: 'home',
+    icon: 'house',
+    label: 'Home',
+    title: 'Kinetic overview',
+    subtitle: 'AI-guided crypto operations automation for trading, treasury, and payments.',
+  },
   {
     id: 'templates',
     icon: 'layout-template',
@@ -118,7 +126,7 @@ async function apiGet(path) {
 
 function readRoute() {
   const route = (window.location.hash || '').replace('#', '').trim();
-  return APP_ROUTES.some(r => r.id === route) ? route : 'templates';
+  return APP_ROUTES.some(r => r.id === route) ? route : 'home';
 }
 
 function formatTime(value) {
@@ -128,6 +136,7 @@ function formatTime(value) {
     return value;
   }
 }
+
 
 function TemplatesLanding({ onOpenRunner }) {
   const [templates, setTemplates] = React.useState(MOCK_TEMPLATES);
@@ -197,8 +206,8 @@ function TemplatesLanding({ onOpenRunner }) {
           <div style={{ marginTop: 8, fontSize: 13, color: KColors.fg2, maxWidth: 640 }}>{selectedTemplate.description}</div>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <KButton onClick={() => onOpenRunner(selectedTemplate.rawName || selectedTemplate.id)}>Open in runner</KButton>
-          <KButton variant="secondary" onClick={() => { window.location.hash = '#builder'; }}>Edit in builder</KButton>
+          <KButton onClick={() => onOpenRunner(selectedTemplate.rawName || selectedTemplate.id)}>Open in Workflows</KButton>
+          <KButton variant="secondary" onClick={() => { window.location.hash = '#builder'; }}>Edit in Workflow Builder (mock)</KButton>
         </div>
         {loadError && <div style={{ fontSize: 11, color: KColors.warning }}>{loadError}</div>}
       </div>
@@ -366,7 +375,9 @@ function App() {
 
         {/* Screen content */}
         <div style={{ flex: 1, overflow: 'hidden' }}>
-          {page === 'templates' ? (
+          {page === 'home' ? (
+            <Home onNavigate={navigate}/>
+          ) : page === 'templates' ? (
             templateOpenInRunner
               ? <WorkflowRunner initialTemplateName={runnerTemplateName}/>
               : <TemplatesLanding onOpenRunner={(name) => { setRunnerTemplateName(name); setTemplateOpenInRunner(true); }}/>
