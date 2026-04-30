@@ -13,7 +13,6 @@ httpx==0.28.1
 idna==3.11
 iniconfig==2.3.0
 Jinja2==3.1.6
--e git+ssh://git@github-lckinetic/lckinetic/kinetic_mvp_bmad.git@9f10b566606c3d7a87c60dd95c442464da0770e0#egg=kinetic_mvp_backend&subdirectory=backend
 MarkupSafe==3.0.3
 packaging==26.1
 pluggy==1.6.0
