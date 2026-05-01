@@ -24,7 +24,7 @@
 #   - done: Retrospective has been completed
 
 generated: "2026-04-12T12:00:00Z"
-last_updated: "2026-05-01T12:18:00Z"
+last_updated: "2026-05-01T12:31:00Z"
 project: kinetic-mvp-bmad
 project_key: NOKEY
 tracking_system: file-system
@@ -81,4 +81,5 @@ development_status:
   8-8-navigation-naming-alignment-for-demo-ia: done
   8-9-home-landing-alignment-to-latest-design-system: done
   8-10-home-refresh-from-latest-claude-design-update: done
+  8-11-documentation-hygiene-and-naming-path-alignment: done
   epic-8-retrospective: optional

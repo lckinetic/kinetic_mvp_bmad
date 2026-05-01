@@ -1,5 +1,10 @@
 # Kinetic MVP – Development & Agent Operating Guide
 
+## Agent Context Files
+
+- For Claude Code project context and working conventions, read `claude.md`.
+- For local setup and runtime troubleshooting, use `docs/onboarding-local.md` as canonical.
+
 ## Local Setup (Canonical)
 
 Use `docs/onboarding-local.md` as the single source of truth for local setup, MOCK_MODE demo flow, and troubleshooting.
@@ -110,10 +115,9 @@ ui/               # HTML UI pages
 
 ---
 
-## 🖥 UI Pages
+## 🖥 UI Access
 
-- `/ui` → Prebuilt workflow runner
-- `/ui/ai` → AI workflow generator
+- `/ui-kit/` → App shell (Home, Workflows, Operations, AI Assistant, Workflow Builder (mock))
 
 ---
 
@@ -273,5 +277,4 @@ http://127.0.0.1:8000/onramp/create
 # Onramp
 http://127.0.0.1:8000/onramp/create
 
-http://127.0.0.1:8000/ui
-http://127.0.0.1:8000/ui/ai
+http://127.0.0.1:8000/ui-kit/

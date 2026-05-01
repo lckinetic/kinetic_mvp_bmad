@@ -397,3 +397,15 @@ So that **messaging hierarchy, visual polish, and example content stay current w
 
 - **Given** latest design source in `Kinetic Design System`, **when** Home is synced, **then** updated Home visuals/content (cards, copy emphasis, use-case structure, roadmap wording) match that latest version.
 - **And** **given** app integration constraints, **when** Home is updated, **then** navigation actions still map to existing route IDs and other pages remain untouched.
+
+### Story 8.11: Documentation hygiene and naming/path alignment
+
+As a **project operator**,  
+I want **core project docs to reflect the current UI naming, routing paths, and agent context entry points**,  
+So that **contributors and demo stakeholders can follow accurate guidance without drift or confusion**.
+
+**Acceptance criteria**
+
+- **Given** canonical project docs (`readme.md`, `docs/demo-mvp-flow.md`, `docs/stakeholder-handoff.md`), **when** reviewed, **then** they use current tab naming (`Home`, `Workflows`, `Operations`, `AI Assistant`, `Workflow Builder (mock)`) and current UI pathing (`/ui-kit/`).
+- **And** **given** agent onboarding context, **when** reading `readme.md`, **then** it includes a clear pointer to `claude.md` for coding-agent project context.
+- **And** **given** this is a hygiene-only pass, **when** docs are updated, **then** no backend/API behavior or UI runtime logic changes are introduced.

@@ -23,11 +23,12 @@ This handoff summarizes where to start, what to demo, and current release-readin
 
 ## Demo narrative (recommended)
 
-1. Show template browsing and open a template in runner.
-2. Start a workflow run and show run status + step details.
-3. Show run history/detail context from Runs.
-4. Show assistant-driven workflow generation.
-5. Show builder entry/editability and keyboard accessibility highlights.
+1. Start on Home to explain Kinetic value proposition and screen sequence.
+2. Show workflow browsing and open a template in Workflows.
+3. Start a workflow run and show run status + step details.
+4. Show run history/detail context from Operations.
+5. Show AI Assistant-driven workflow generation.
+6. Show Workflow Builder (mock) entry/editability and keyboard accessibility highlights.
 
 ## Current risk posture
 
