@@ -58,7 +58,7 @@ def interpret(req: InterpretRequest, settings: Settings = Depends(get_settings))
             "source": result.source,
             "provider": result.provider,
             "model": result.model,
-            "mock_mode": settings.mock_mode,
+            "mock_mode": settings.ai_mock_mode,
         },
     }
 
@@ -66,9 +66,9 @@ def interpret(req: InterpretRequest, settings: Settings = Depends(get_settings))
 @router.get("/capabilities")
 def capabilities(settings: Settings = Depends(get_settings)):
     return {
-        "mock_mode": settings.mock_mode,
-        "provider": "mock" if settings.mock_mode else settings.ai_provider,
-        "model": "rule-based" if settings.mock_mode else settings.ai_model,
+        "mock_mode": settings.ai_mock_mode,
+        "provider": "mock" if settings.ai_mock_mode else settings.ai_provider,
+        "model": "rule-based" if settings.ai_mock_mode else settings.ai_model,
     }
 
 
@@ -76,9 +76,9 @@ def capabilities(settings: Settings = Depends(get_settings)):
 def config_status(settings: Settings = Depends(get_settings)):
     """Non-secret AI runtime diagnostics for pre-demo verification."""
     return {
-        "mock_mode": settings.mock_mode,
-        "provider": "mock" if settings.mock_mode else settings.ai_provider,
-        "model": "rule-based" if settings.mock_mode else settings.ai_model,
+        "mock_mode": settings.ai_mock_mode,
+        "provider": "mock" if settings.ai_mock_mode else settings.ai_provider,
+        "model": "rule-based" if settings.ai_mock_mode else settings.ai_model,
         "openai_api_key_configured": bool(settings.openai_api_key),
         "openai_base_url": settings.openai_base_url,
         "ai_timeout_seconds": settings.ai_timeout_seconds,

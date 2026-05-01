@@ -14,6 +14,7 @@ def _bool(v: str | None, default: bool = False) -> bool:
 class Settings:
     database_url: str
     mock_mode: bool
+    ai_mock_mode: bool
     ai_provider: str
     ai_model: str
     openai_api_key: str
@@ -36,9 +37,11 @@ def get_settings() -> Settings:
     if not database_url:
         raise RuntimeError("DATABASE_URL is required (see backend/.env.example).")
 
+    global_mock = _bool(os.getenv("MOCK_MODE"), default=True)
     settings = Settings(
         database_url=database_url,
-        mock_mode=_bool(os.getenv("MOCK_MODE"), default=True),
+        mock_mode=global_mock,
+        ai_mock_mode=_bool(os.getenv("AI_MOCK_MODE"), default=global_mock),
         ai_provider=os.getenv("AI_PROVIDER", "openai").strip().lower(),
         ai_model=os.getenv("AI_MODEL", "gpt-4o-mini").strip(),
         openai_api_key=os.getenv("OPENAI_API_KEY", "").strip(),
@@ -52,11 +55,11 @@ def get_settings() -> Settings:
 
         log_level=os.getenv("LOG_LEVEL", "INFO"),
     )
-    if not settings.mock_mode:
+    if not settings.ai_mock_mode:
         if settings.ai_provider != "openai":
-            raise RuntimeError("When MOCK_MODE=false, AI_PROVIDER must be 'openai'.")
+            raise RuntimeError("When AI is live, AI_PROVIDER must be 'openai'.")
         if not settings.openai_api_key:
-            raise RuntimeError("When MOCK_MODE=false, OPENAI_API_KEY is required.")
+            raise RuntimeError("When AI is live, OPENAI_API_KEY is required.")
         if not settings.ai_model:
-            raise RuntimeError("When MOCK_MODE=false, AI_MODEL is required.")
+            raise RuntimeError("When AI is live, AI_MODEL is required.")
     return settings

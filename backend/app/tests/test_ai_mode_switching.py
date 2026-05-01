@@ -9,10 +9,13 @@ from app.core.config import Settings, get_settings
 from app.core.errors import register_error_handlers
 
 
-def _mock_settings(*, mock_mode: bool) -> Settings:
+def _mock_settings(*, mock_mode: bool, ai_mock_mode: bool | None = None) -> Settings:
+    if ai_mock_mode is None:
+        ai_mock_mode = mock_mode
     return Settings(
         database_url="sqlite:///./test.sqlite3",
         mock_mode=mock_mode,
+        ai_mock_mode=ai_mock_mode,
         ai_provider="openai",
         ai_model="gpt-4o-mini",
         openai_api_key="test-key",
@@ -26,11 +29,14 @@ def _mock_settings(*, mock_mode: bool) -> Settings:
     )
 
 
-def _ai_app(*, mock_mode: bool) -> FastAPI:
+def _ai_app(*, mock_mode: bool, ai_mock_mode: bool | None = None) -> FastAPI:
     app = FastAPI()
     register_error_handlers(app)
     app.include_router(ai_router)
-    app.dependency_overrides[get_settings] = lambda: _mock_settings(mock_mode=mock_mode)
+    app.dependency_overrides[get_settings] = lambda: _mock_settings(
+        mock_mode=mock_mode,
+        ai_mock_mode=ai_mock_mode,
+    )
     return app
 
 
@@ -82,3 +88,13 @@ def test_ai_interpret_failure_returns_sanitized_error_envelope(monkeypatch) -> N
     assert payload["code"] == "AI_INTERPRET_FAILED"
     assert payload["message"] == "AI workflow interpretation failed"
     assert "test-key" not in str(payload)
+
+
+def test_ai_capabilities_uses_ai_mock_mode_when_decoupled() -> None:
+    client = TestClient(_ai_app(mock_mode=True, ai_mock_mode=False))
+    res = client.get("/ai/capabilities")
+    assert res.status_code == 200
+    payload = res.json()
+    assert payload["mock_mode"] is False
+    assert payload["provider"] == "openai"
+    assert payload["model"] == "gpt-4o-mini"

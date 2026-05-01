@@ -19,6 +19,7 @@ def _mk_settings(db_path: str) -> Settings:
     return Settings(
         database_url=f"sqlite:///{db_path}",
         mock_mode=True,
+        ai_mock_mode=True,
         ai_provider="openai",
         ai_model="gpt-4o-mini",
         openai_api_key="",

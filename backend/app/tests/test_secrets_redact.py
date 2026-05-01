@@ -36,6 +36,7 @@ def test_redact_secrets_in_text_strips_configured_values() -> None:
     settings = Settings(
         database_url="postgresql://u:dbpass@localhost/db",
         mock_mode=True,
+        ai_mock_mode=True,
         ai_provider="openai",
         ai_model="gpt-4o-mini",
         openai_api_key="sk-test-secret",

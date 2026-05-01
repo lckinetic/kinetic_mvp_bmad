@@ -122,6 +122,6 @@ class OpenAIAiService(BaseAiService):
 
 
 def get_ai_service(settings: Settings) -> BaseAiService:
-    if settings.mock_mode:
+    if settings.ai_mock_mode:
         return MockAiService(settings)
     return OpenAIAiService(settings)

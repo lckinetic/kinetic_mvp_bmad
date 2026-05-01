@@ -59,6 +59,8 @@ NFR-P1–P3 Performance · NFR-S1–S4 Security · NFR-R1–R2 Reliability · NF
 5. **E5 — Conversational assistant** (authoring assistance)  
 6. **E6 — Observability, support & documentation**  
 7. **E7 — Docker, local env & release discipline**
+8. **E8 — Post-MVP hardening and demo reliability**
+9. **E9 — AI runtime mode decoupling and safe rollout controls**
 
 ### Sprint sequencing update (2026-04-24)
 
@@ -397,6 +399,25 @@ So that **messaging hierarchy, visual polish, and example content stay current w
 
 - **Given** latest design source in `Kinetic Design System`, **when** Home is synced, **then** updated Home visuals/content (cards, copy emphasis, use-case structure, roadmap wording) match that latest version.
 - **And** **given** app integration constraints, **when** Home is updated, **then** navigation actions still map to existing route IDs and other pages remain untouched.
+
+---
+
+## Epic 9: AI runtime mode decoupling and safe rollout controls
+
+**Goal:** Enable live AI model testing independently from non-AI mock integrations, so real AI can be activated without unintentionally enabling unfinished external adapter paths.
+
+### Story 9.1: Decouple AI mock-mode from global mock-mode
+
+As a **developer**,  
+I want **AI service mock/real behavior to be controlled by a dedicated flag (`AI_MOCK_MODE`) instead of only the global `MOCK_MODE`**,  
+So that **I can test live OpenAI behavior without forcing Banxa/Privy/Coinbase into real mode**.
+
+**Acceptance criteria**
+
+- **Given** `AI_MOCK_MODE` is explicitly set, **when** app settings are loaded, **then** AI service mode follows `AI_MOCK_MODE` while non-AI adapters continue to follow existing `MOCK_MODE` behavior.
+- **And** **given** `AI_MOCK_MODE` is not set, **when** settings are loaded, **then** AI mode defaults to `MOCK_MODE` to preserve backward-compatible behavior.
+- **And** **given** startup validation for live AI execution, **when** AI runs in real mode, **then** required AI environment checks (e.g., API key presence) are enforced based on AI mode only.
+- **And** **given** AI service wiring, **when** service selection occurs, **then** it branches on the dedicated AI mode flag without changing adapter runtime logic.
 
 ### Story 8.11: Documentation hygiene and naming/path alignment
 
