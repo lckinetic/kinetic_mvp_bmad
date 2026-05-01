@@ -386,3 +386,14 @@ So that **Kinetic's narrative, visual quality, and walkthrough guidance are cons
 - **Given** app load on Home, **when** the page renders, **then** content and layout follow the latest `kinetic-design-system` homepage design for hero, problem/solution, architecture, use cases, and roadmap.
 - **And** **given** Home CTAs and screen cards, **when** users click them, **then** navigation routes to existing app pages without modifying those pages.
 - **And** **given** scope control, **when** this story is implemented, **then** only Home is changed while Workflows, Operations, AI Assistant, and Workflow Builder remain functionally unchanged.
+
+### Story 8.10: Home refresh from latest Claude design update
+
+As a **demo stakeholder**,  
+I want **Home to reflect the most recent Claude design iteration**,  
+So that **messaging hierarchy, visual polish, and example content stay current with investor-facing narrative updates**.
+
+**Acceptance criteria**
+
+- **Given** latest design source in `Kinetic Design System`, **when** Home is synced, **then** updated Home visuals/content (cards, copy emphasis, use-case structure, roadmap wording) match that latest version.
+- **And** **given** app integration constraints, **when** Home is updated, **then** navigation actions still map to existing route IDs and other pages remain untouched.
