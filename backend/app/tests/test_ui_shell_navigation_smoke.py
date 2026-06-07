@@ -10,7 +10,16 @@ def _index_html() -> str:
     return (repo_root / "ui_kits" / "app" / "index.html").read_text(encoding="utf-8")
 
 
-def test_app_shell_declares_expected_top_level_routes() -> None:
+def test_app_shell_declares_operational_nav_routes() -> None:
+    content = _index_html()
+    assert "id: 'dashboard'" in content
+    assert "id: 'treasury'" in content
+    assert "id: 'recipients'" in content
+    assert "id: 'activity'" in content
+    assert "id: 'settings'" in content
+
+
+def test_legacy_demo_routes_remain_addressable() -> None:
     content = _index_html()
     assert "id: 'templates'" in content
     assert "id: 'runs'" in content
@@ -28,3 +37,26 @@ def test_hash_route_sync_is_present() -> None:
     content = _index_html()
     assert "window.addEventListener('hashchange', onHashChange);" in content
     assert "window.location.hash = `#${page}`;" in content
+
+
+def test_workspace_bootstrap_defaults_to_dashboard_when_present() -> None:
+    content = _index_html()
+    assert "loadWorkspace() ? 'dashboard' : 'home'" in content
+
+
+def test_operational_screens_wire_checklist_progression() -> None:
+    content = _index_html()
+    assert "onChecklistStep={completeChecklistStep}" in content
+    treasury = (Path(__file__).resolve().parents[3] / "ui_kits" / "app" / "Treasury.jsx").read_text(encoding="utf-8")
+    recipients = (Path(__file__).resolve().parents[3] / "ui_kits" / "app" / "Recipients.jsx").read_text(encoding="utf-8")
+    ops_shell = (Path(__file__).resolve().parents[3] / "ui_kits" / "app" / "OpsShell.jsx").read_text(encoding="utf-8")
+    assert "onChecklistStep('treasury')" in treasury
+    assert "onChecklistStep('recipient')" in recipients
+    assert "onChecklistStep('workflow')" in ops_shell
+
+
+def test_home_use_cases_align_with_treasury_payout_hero() -> None:
+    home = (Path(__file__).resolve().parents[3] / "ui_kits" / "app" / "Home.jsx").read_text(encoding="utf-8")
+    assert "Weekly contractor payouts" in home
+    assert "Treasury, Recipients, Workflows, Activity Centre shells" in home
+    assert "Runner, AI Generator, Builder" not in home

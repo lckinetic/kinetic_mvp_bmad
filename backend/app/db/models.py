@@ -97,6 +97,13 @@ class WorkflowStep(SQLModel, table=True):
     ended_at: Optional[datetime] = None
 
 
+class Workspace(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field(index=True)
+    created_at: datetime = Field(default_factory=utcnow)
+    updated_at: datetime = Field(default_factory=utcnow)
+
+
 class AssistantProposal(SQLModel, table=True):
     __table_args__ = (
         UniqueConstraint("proposal_id", name="uq_assistant_proposal_id"),

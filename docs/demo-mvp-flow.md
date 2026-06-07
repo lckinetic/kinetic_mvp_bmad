@@ -1,6 +1,6 @@
 # MVP Demo Flow
 
-This is the canonical walkthrough for product demos after Epics 1-7 completion.
+This is the canonical walkthrough for product demos after Phase 2 Sprint 1 (hero workflow shell).
 
 ## Preconditions
 
@@ -10,26 +10,30 @@ This is the canonical walkthrough for product demos after Epics 1-7 completion.
   - `cp backend/.env.mock.example backend/.env` for deterministic demo-safe mode
   - `cp backend/.env.live.example backend/.env` for real AI calls
 
-## Demo path (happy path)
+## Demo path (hero journey — Sprint 1)
 
-1. Open the UI and land on **Home**.
-2. From Home, use the guided sequence cards to introduce the flow.
-3. Navigate to **Workflows**.
-4. Select **Managed Crypto Treasury** in the template list.
-5. Click **Open in Workflows**.
-6. In runner, review prefilled inputs and click **Run workflow**.
-7. Confirm run result appears with:
-   - run id
-   - status
-   - step table data
-8. Navigate to **Operations** in the sidebar.
-9. Open a recent run and confirm detail information is visible.
-10. Navigate to **AI Assistant** and generate a workflow from a prompt.
-11. Navigate to **Workflow Builder (mock)** and verify graph editing is reachable.
+1. Open the UI and land on **Home** (programmable financial operations positioning).
+2. Click **Get started** to open the onboarding wizard.
+3. Complete onboarding: audience → preview → create workspace → **Go to Dashboard**.
+4. On **Dashboard**, review the setup checklist (treasury, recipients, workflow, activity).
+5. Navigate to **Treasury** — review the operational account shell and funding empty state.
+6. Navigate to **Recipients** — review contractor payout destination shell.
+7. Navigate to **Workflows** — placeholder for payout workflow configuration (Sprint 2+).
+8. Navigate to **Activity Centre** — unified timeline shell.
+9. Open **Settings** → **Advanced** to reach legacy MVP tools if needed.
+
+## Legacy demo path (regression)
+
+1. From **Settings** → **Advanced**, open **Legacy templates**.
+2. Select **Managed Crypto Treasury** in the template list.
+3. Click **Run workflow** and complete a run in the runner.
+4. Open **Legacy operations** and confirm run detail is visible.
+5. Open **AI Assistant** and generate a workflow from a prompt.
+6. Open **Workflow Builder (mock)** and verify graph editing is reachable.
 
 ## Optional live-AI segment
 
-1. Switch to live mode (`MOCK_MODE=false`) with valid `OPENAI_API_KEY`.
+1. Switch to live mode (`AI_MOCK_MODE=false`) with valid `OPENAI_API_KEY`.
 2. Restart backend.
 3. In **AI Assistant**, submit a natural-language request and generate/run.
 4. Verify shell badge shows `LIVE AI` and model name.
@@ -44,5 +48,6 @@ This is the canonical walkthrough for product demos after Epics 1-7 completion.
 ## Troubleshooting quick notes
 
 - If API calls fail, UI falls back to deterministic local mock data for templates/runs and run completion.
+- If workspace creation fails, confirm backend is up and `DATABASE_URL` is reachable locally (use SQLite override if Railway URL is set).
 - If no runs appear from API, confirm backend is up and open the UI from `/ui-kit` (same origin).
 - If styles/icons look incorrect, refresh once after startup and verify static assets loaded.

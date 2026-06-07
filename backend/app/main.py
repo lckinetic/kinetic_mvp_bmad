@@ -21,6 +21,7 @@ from app.api.workflows import router as workflows_router
 from app.ui.router import router as ui_router
 from app.api.ai import router as ai_router
 from app.api.assistant import router as assistant_router
+from app.api.workspaces import router as workspaces_router
 
 
 logger = logging.getLogger("kinetic")
@@ -74,6 +75,7 @@ def create_app() -> FastAPI:
     app.include_router(ui_router)
     app.include_router(ai_router)
     app.include_router(assistant_router)
+    app.include_router(workspaces_router)
 
     return app
 

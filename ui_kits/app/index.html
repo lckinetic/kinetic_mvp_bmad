@@ -52,48 +52,37 @@
 
 <script type="text/babel" src="/ui-kit/Components.jsx"></script>
 <script type="text/babel" src="/ui-kit/Home.jsx"></script>
+<script type="text/babel" src="/ui-kit/Dashboard.jsx"></script>
+<script type="text/babel" src="/ui-kit/Treasury.jsx"></script>
+<script type="text/babel" src="/ui-kit/Recipients.jsx"></script>
+<script type="text/babel" src="/ui-kit/Onboarding.jsx"></script>
+<script type="text/babel" src="/ui-kit/Settings.jsx"></script>
+<script type="text/babel" src="/ui-kit/OpsShell.jsx"></script>
 <script type="text/babel" src="/ui-kit/WorkflowRunner.jsx"></script>
 <script type="text/babel" src="/ui-kit/AIGenerator.jsx"></script>
 <script type="text/babel" src="/ui-kit/WorkflowBuilder.jsx"></script>
 
 <script type="text/babel">
-const APP_ROUTES = [
-  {
-    id: 'home',
-    icon: 'house',
-    label: 'Home',
-    title: 'Kinetic overview',
-    subtitle: 'AI-guided crypto operations automation for trading, treasury, and payments.',
-  },
-  {
-    id: 'templates',
-    icon: 'layout-template',
-    label: 'Workflows',
-    title: 'Workflows',
-    subtitle: 'Browse curated workflow templates and open the runner.',
-  },
-  {
-    id: 'runs',
-    icon: 'history',
-    label: 'Operations',
-    title: 'Operations',
-    subtitle: 'Inspect recent runs and jump to run detail context.',
-  },
-  {
-    id: 'assistant',
-    icon: 'sparkles',
-    label: 'AI Assistant',
-    title: 'AI Assistant',
-    subtitle: 'Generate a workflow proposal from natural language.',
-  },
-  {
-    id: 'builder',
-    icon: 'git-branch',
-    label: 'Workflow Builder (mock)',
-    title: 'Workflow Builder (mock)',
-    subtitle: 'Visually compose and edit a workflow graph.',
-  },
+const PRIMARY_NAV = [
+  { id: 'dashboard', icon: 'layout-dashboard', label: 'Dashboard', title: 'Dashboard', subtitle: 'Operational overview for treasury, workflows, and activity.' },
+  { id: 'treasury', icon: 'wallet', label: 'Treasury', title: 'Treasury', subtitle: 'Operational stablecoin account, funding, and transaction history.' },
+  { id: 'recipients', icon: 'users', label: 'Recipients', title: 'Recipients', subtitle: 'Contractor payout destinations for your workspace.' },
+  { id: 'workflows', icon: 'git-branch', label: 'Workflows', title: 'Workflows', subtitle: 'Configure and run contractor payout workflows.' },
+  { id: 'activity', icon: 'activity', label: 'Activity Centre', title: 'Activity Centre', subtitle: 'Unified timeline of runs, transfers, and alerts.' },
+  { id: 'settings', icon: 'settings', label: 'Settings', title: 'Settings', subtitle: 'Workspace context and advanced demo tools.' },
 ];
+
+const ROUTE_META = {
+  home: { id: 'home', icon: 'house', label: 'Home', title: 'Kinetic overview', subtitle: 'Programmable financial operations for treasury and contractor payouts.' },
+  onboarding: { id: 'onboarding', icon: 'rocket', label: 'Onboarding', title: 'Get started', subtitle: 'Create your workspace and begin the hero journey.' },
+  templates: { id: 'templates', icon: 'layout-template', label: 'Legacy templates', title: 'Legacy workflow templates', subtitle: 'Prebuilt MVP templates for demo regression.' },
+  runs: { id: 'runs', icon: 'history', label: 'Legacy operations', title: 'Legacy operations', subtitle: 'Historical workflow run list from the MVP runner.' },
+  assistant: { id: 'assistant', icon: 'sparkles', label: 'AI Assistant', title: 'AI Assistant', subtitle: 'Generate a workflow proposal from natural language.' },
+  builder: { id: 'builder', icon: 'git-branch', label: 'Workflow Builder (mock)', title: 'Workflow Builder (mock)', subtitle: 'Visually compose and edit a workflow graph.' },
+};
+
+const FULL_BLEED_PAGES = new Set(['home', 'onboarding']);
+const KNOWN_ROUTES = new Set([...PRIMARY_NAV.map(r => r.id), ...Object.keys(ROUTE_META)]);
 
 const MOCK_TEMPLATES = [
   {
@@ -126,7 +115,13 @@ async function apiGet(path) {
 
 function readRoute() {
   const route = (window.location.hash || '').replace('#', '').trim();
-  return APP_ROUTES.some(r => r.id === route) ? route : 'home';
+  if (!route) return loadWorkspace() ? 'dashboard' : 'home';
+  if (KNOWN_ROUTES.has(route)) return route;
+  return loadWorkspace() ? 'dashboard' : 'home';
+}
+
+function getPageMeta(page) {
+  return PRIMARY_NAV.find(r => r.id === page) || ROUTE_META[page] || ROUTE_META.home;
 }
 
 function formatTime(value) {
@@ -206,7 +201,7 @@ function TemplatesLanding({ onOpenRunner }) {
           <div style={{ marginTop: 8, fontSize: 13, color: KColors.fg2, maxWidth: 640 }}>{selectedTemplate.description}</div>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <KButton onClick={() => onOpenRunner(selectedTemplate.rawName || selectedTemplate.id)}>Open in Workflows</KButton>
+          <KButton onClick={() => onOpenRunner(selectedTemplate.rawName || selectedTemplate.id)}>Run workflow</KButton>
           <KButton variant="secondary" onClick={() => { window.location.hash = '#builder'; }}>Edit in Workflow Builder (mock)</KButton>
         </div>
         {loadError && <div style={{ fontSize: 11, color: KColors.warning }}>{loadError}</div>}
@@ -296,14 +291,44 @@ function RunsLanding() {
 
 function App() {
   const [page, setPage] = React.useState(readRoute);
+  const [workspace, setWorkspace] = React.useState(() => loadWorkspace());
+  const [checklist, setChecklist] = React.useState(() => loadChecklist(loadWorkspace()?.id));
   const [templateOpenInRunner, setTemplateOpenInRunner] = React.useState(false);
   const [runnerTemplateName, setRunnerTemplateName] = React.useState(null);
   const [aiCapabilities, setAiCapabilities] = React.useState({ mock_mode: true, provider: "mock", model: "rule-based" });
   const mainHeadingRef = React.useRef(null);
 
+  const refreshWorkspaceState = React.useCallback((nextWorkspace) => {
+    setWorkspace(nextWorkspace);
+    setChecklist(loadChecklist(nextWorkspace?.id));
+  }, []);
+
+  const completeChecklistStep = React.useCallback((step) => {
+    if (!workspace?.id) return;
+    setChecklist(markChecklistStep(workspace.id, step));
+  }, [workspace?.id]);
+
   React.useEffect(() => {
     if (window.lucide) lucide.createIcons();
   });
+
+  React.useEffect(() => {
+    let cancelled = false;
+    async function syncWorkspace() {
+      try {
+        const row = await apiGet('/workspaces/current');
+        if (!cancelled) {
+          saveWorkspace(row);
+          refreshWorkspaceState(row);
+        }
+      } catch {
+        const local = loadWorkspace();
+        if (!cancelled && local) refreshWorkspaceState(local);
+      }
+    }
+    syncWorkspace();
+    return () => { cancelled = true; };
+  }, [refreshWorkspaceState]);
 
   React.useEffect(() => {
     function onHashChange() {
@@ -347,18 +372,74 @@ function App() {
 
   function navigate(next) {
     setPage(next);
-    // Any explicit nav click exits runner subview to avoid templates dead-end states.
     setTemplateOpenInRunner(false);
     if (next === 'templates') setRunnerTemplateName(null);
   }
 
-  const pageMeta = APP_ROUTES.find(r => r.id === page) || APP_ROUTES[0];
+  const pageMeta = getPageMeta(page);
+
+  function renderScreenContent() {
+    if (page === 'dashboard') {
+      return <Dashboard workspace={workspace} checklist={checklist} onNavigate={navigate} />;
+    }
+    if (page === 'treasury') {
+      return <Treasury onNavigate={navigate} onChecklistStep={completeChecklistStep} />;
+    }
+    if (page === 'recipients') {
+      return <Recipients onNavigate={navigate} onChecklistStep={completeChecklistStep} />;
+    }
+    if (page === 'workflows') {
+      return <WorkflowsShell onNavigate={navigate} onChecklistStep={completeChecklistStep} />;
+    }
+    if (page === 'activity') {
+      return <ActivityShell onNavigate={navigate} />;
+    }
+    if (page === 'settings') {
+      return <Settings workspace={workspace} onNavigate={navigate} aiCapabilities={aiCapabilities} />;
+    }
+    if (page === 'templates') {
+      return templateOpenInRunner
+        ? <WorkflowRunner initialTemplateName={runnerTemplateName}/>
+        : <TemplatesLanding onOpenRunner={(name) => { setRunnerTemplateName(name); setTemplateOpenInRunner(true); }}/>;
+    }
+    if (page === 'runs') {
+      return <RunsLanding/>;
+    }
+    if (page === 'assistant') {
+      return <AIGenerator/>;
+    }
+    if (page === 'builder') {
+      return <WorkflowBuilder/>;
+    }
+    return null;
+  }
+
+  if (page === 'home') {
+    return (
+      <main id="main-content" style={{ height: '100vh', overflow: 'hidden' }}>
+        <Home onNavigate={navigate} onStartOnboarding={() => navigate('onboarding')} workspace={workspace} />
+      </main>
+    );
+  }
+
+  if (page === 'onboarding') {
+    return (
+      <main id="main-content" style={{ height: '100vh', overflow: 'hidden' }}>
+        <Onboarding
+          onComplete={() => {
+            refreshWorkspaceState(loadWorkspace());
+            navigate('dashboard');
+          }}
+          onGoHome={() => navigate('home')}
+        />
+      </main>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
-      <KSidebar active={page} onNavigate={navigate} navItems={APP_ROUTES}/>
+      <KSidebar active={page} onNavigate={navigate} navItems={PRIMARY_NAV}/>
       <main id="main-content" style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-        {/* Top bar */}
         <div style={{ padding: '12px 20px', borderBottom: `1px solid ${KColors.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
           <div>
             <h1 ref={mainHeadingRef} tabIndex="-1" style={{ fontSize: 15, fontWeight: 600, color: KColors.fg1, margin: 0 }}>
@@ -372,22 +453,8 @@ function App() {
             {aiCapabilities.mock_mode ? 'MOCK MODE' : `LIVE AI · ${aiCapabilities.model}`}
           </span>
         </div>
-
-        {/* Screen content */}
         <div style={{ flex: 1, overflow: 'hidden' }}>
-          {page === 'home' ? (
-            <Home onNavigate={navigate}/>
-          ) : page === 'templates' ? (
-            templateOpenInRunner
-              ? <WorkflowRunner initialTemplateName={runnerTemplateName}/>
-              : <TemplatesLanding onOpenRunner={(name) => { setRunnerTemplateName(name); setTemplateOpenInRunner(true); }}/>
-          ) : page === 'runs' ? (
-            <RunsLanding/>
-          ) : page === 'assistant' ? (
-            <AIGenerator/>
-          ) : (
-            <WorkflowBuilder/>
-          )}
+          {renderScreenContent()}
         </div>
       </main>
     </div>

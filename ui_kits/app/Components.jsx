@@ -217,6 +217,129 @@ function KDivider() {
   return <div style={{ height: 1, background: KColors.border, margin: '16px 0' }}/>;
 }
 
+// ── Workspace client storage (Sprint 1) ─────────────
+const WORKSPACE_STORAGE_KEY = 'kinetic_workspace';
+const CHECKLIST_STORAGE_PREFIX = 'kinetic_checklist_';
+
+const DEFAULT_CHECKLIST = {
+  treasury: false,
+  recipient: false,
+  workflow: false,
+  firstRun: false,
+};
+
+function loadWorkspace() {
+  try {
+    const raw = window.localStorage.getItem(WORKSPACE_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed.id !== 'number' || !parsed.name) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function saveWorkspace(workspace) {
+  window.localStorage.setItem(WORKSPACE_STORAGE_KEY, JSON.stringify(workspace));
+}
+
+function clearWorkspace() {
+  window.localStorage.removeItem(WORKSPACE_STORAGE_KEY);
+}
+
+function loadChecklist(workspaceId) {
+  if (!workspaceId) return { ...DEFAULT_CHECKLIST };
+  try {
+    const raw = window.localStorage.getItem(`${CHECKLIST_STORAGE_PREFIX}${workspaceId}`);
+    if (!raw) return { ...DEFAULT_CHECKLIST };
+    return { ...DEFAULT_CHECKLIST, ...JSON.parse(raw) };
+  } catch {
+    return { ...DEFAULT_CHECKLIST };
+  }
+}
+
+function saveChecklist(workspaceId, checklist) {
+  if (!workspaceId) return;
+  window.localStorage.setItem(`${CHECKLIST_STORAGE_PREFIX}${workspaceId}`, JSON.stringify(checklist));
+}
+
+function markChecklistStep(workspaceId, step, value = true) {
+  const next = { ...loadChecklist(workspaceId), [step]: value };
+  saveChecklist(workspaceId, next);
+  return next;
+}
+
+// ── Empty state ───────────────────────────────────────
+function KEmptyState({ icon = 'inbox', title, description, actionLabel, onAction, secondaryLabel, onSecondary }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '48px 24px', gap: 12, minHeight: 240 }}>
+      <div style={{ width: 48, height: 48, borderRadius: 12, background: KColors.primaryDim, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <i data-lucide={icon} style={{ width: 22, height: 22, color: KColors.primaryLight }}></i>
+      </div>
+      <div style={{ fontSize: 16, fontWeight: 700, color: KColors.fg1 }}>{title}</div>
+      {description && <div style={{ fontSize: 13, color: KColors.fg3, maxWidth: 420, lineHeight: 1.55 }}>{description}</div>}
+      {actionLabel && onAction && <KButton onClick={onAction}>{actionLabel}</KButton>}
+      {secondaryLabel && onSecondary && (
+        <KButton variant="ghost" size="sm" onClick={onSecondary}>{secondaryLabel}</KButton>
+      )}
+    </div>
+  );
+}
+
+// ── Setup checklist ───────────────────────────────────
+function SetupChecklist({ checklist, onNavigate, compact = false }) {
+  const items = [
+    { key: 'treasury', label: 'Set up treasury', route: 'treasury' },
+    { key: 'recipient', label: 'Add a contractor recipient', route: 'recipients' },
+    { key: 'workflow', label: 'Create a payout workflow', route: 'workflows' },
+    { key: 'firstRun', label: 'Run your first payout', route: 'workflows' },
+  ];
+  const doneCount = items.filter(i => checklist[i.key]).length;
+  if (doneCount === items.length) return null;
+
+  return (
+    <div style={{ background: KColors.overlay, border: `1px solid ${KColors.border}`, borderRadius: 10, padding: compact ? '12px 14px' : '16px 18px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: compact ? 8 : 12 }}>
+        <div style={{ fontSize: compact ? 12 : 13, fontWeight: 700, color: KColors.fg1 }}>Setup checklist</div>
+        <span style={{ fontSize: 11, color: KColors.fg3 }}>{doneCount}/{items.length} complete</span>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {items.map(item => (
+          <button
+            key={item.key}
+            type="button"
+            onClick={() => onNavigate && onNavigate(item.route)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 6,
+              border: `1px solid ${KColors.border}`, background: KColors.raised, cursor: 'pointer',
+              textAlign: 'left', fontFamily: 'inherit', width: '100%',
+            }}
+          >
+            <span style={{ width: 18, height: 18, borderRadius: 4, border: `1px solid ${checklist[item.key] ? KColors.success : KColors.borderStrong}`, background: checklist[item.key] ? KColors.successBg : 'transparent', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: KColors.success, fontSize: 11 }}>
+              {checklist[item.key] ? '✓' : ''}
+            </span>
+            <span style={{ fontSize: 12, color: checklist[item.key] ? KColors.fg3 : KColors.fg1, textDecoration: checklist[item.key] ? 'line-through' : 'none' }}>{item.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Widget placeholder ────────────────────────────────
+function KWidgetShell({ title, children, actionLabel, onAction }) {
+  return (
+    <div style={{ background: KColors.overlay, border: `1px solid ${KColors.border}`, borderRadius: 10, padding: 16, display: 'flex', flexDirection: 'column', gap: 10, minHeight: 140 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <KSectionLabel>{title}</KSectionLabel>
+        {actionLabel && onAction && <KButton variant="ghost" size="sm" onClick={onAction}>{actionLabel}</KButton>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
 // ── Sidebar nav ───────────────────────────────────────
 function KSidebar({ active, onNavigate, navItems }) {
   const items = navItems || [
@@ -262,4 +385,7 @@ function KSidebar({ active, onNavigate, navItems }) {
 
 Object.assign(window, {
   KColors, KLogo, KButton, KInput, KSelect, KPill, KStepper, KStepsTable, KCodeBlock, KSectionLabel, KDivider, KSidebar,
+  KEmptyState, SetupChecklist, KWidgetShell,
+  WORKSPACE_STORAGE_KEY, CHECKLIST_STORAGE_PREFIX, DEFAULT_CHECKLIST,
+  loadWorkspace, saveWorkspace, clearWorkspace, loadChecklist, saveChecklist, markChecklistStep,
 });

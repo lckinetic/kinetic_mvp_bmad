@@ -141,7 +141,8 @@ function SectionHeading({ label, title, sub }) {
   );
 }
 
-function Home({ onNavigate }) {
+function Home({ onNavigate, onStartOnboarding, workspace }) {
+  const start = onStartOnboarding || (() => onNavigate('onboarding'));
   return (
     <div style={{ height: '100%', overflow: 'auto', background: KColors.surface }}>
       <div style={{ maxWidth: 900, margin: '0 auto', padding: '40px 32px 80px' }}>
@@ -151,30 +152,28 @@ function Home({ onNavigate }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: KColors.successBg, color: KColors.success, fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 9999, border: '1px solid rgba(74,222,128,0.2)' }}>
               <span style={{ width: 5, height: 5, borderRadius: '50%', background: KColors.success }}/>
-              MVP LIVE
+              FINANCIAL OPERATIONS PLATFORM
             </span>
-            <span style={{ fontSize: 11, color: KColors.fg3 }}>Banxa · Privy · Coinbase · Fireblocks</span>
+            <span style={{ fontSize: 11, color: KColors.fg3 }}>Treasury · Payouts · Monitoring</span>
           </div>
-          <h1 style={{ fontSize: 42, fontWeight: 700, letterSpacing: '-0.03em', color: KColors.fg1, lineHeight: 1.15, marginBottom: 16, maxWidth: 640 }}>
-            Digital &amp; crypto operations,<br/>
-            <span style={{ color: KColors.primaryLight }}>as simple as consumer apps.</span>
+          <h1 style={{ fontSize: 42, fontWeight: 700, letterSpacing: '-0.03em', color: KColors.fg1, lineHeight: 1.15, marginBottom: 16, maxWidth: 680 }}>
+            Stablecoin treasury &amp; contractor payouts,<br/>
+            <span style={{ color: KColors.primaryLight }}>orchestrated like an ops platform.</span>
           </h1>
-          <p style={{ fontSize: 15, color: KColors.fg2, maxWidth: 560, lineHeight: 1.65, marginBottom: 28 }}>
-            Kinetic is an AI-powered workflow automation platform for crypto operations. Build, run, and monitor end-to-end crypto workflows across trading, treasury, custody, and payments — without custom integrations.
+          <p style={{ fontSize: 15, color: KColors.fg2, maxWidth: 580, lineHeight: 1.65, marginBottom: 28 }}>
+            Kinetic is a programmable financial operations platform. Fund treasury, manage contractor recipients, configure payout workflows, and monitor activity — without building custom integrations or exposing infrastructure complexity.
           </p>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <KButton onClick={() => onNavigate('builder')}>
-              <i data-lucide="git-branch" style={{ width: 14, height: 14 }}></i>
-              Build a workflow
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <KButton onClick={start}>
+              <i data-lucide="rocket" style={{ width: 14, height: 14 }}></i>
+              Get started
             </KButton>
-            <KButton variant="secondary" onClick={() => onNavigate('assistant')}>
-              <i data-lucide="cpu" style={{ width: 14, height: 14 }}></i>
-              Try AI Assistant
-            </KButton>
-            <KButton variant="secondary" onClick={() => onNavigate('templates')}>
-              <i data-lucide="play-circle" style={{ width: 14, height: 14 }}></i>
-              Browse templates
-            </KButton>
+            {workspace && (
+              <KButton variant="secondary" onClick={() => onNavigate('dashboard')}>
+                <i data-lucide="layout-dashboard" style={{ width: 14, height: 14 }}></i>
+                Go to Dashboard
+              </KButton>
+            )}
           </div>
         </div>
 
@@ -211,44 +210,15 @@ function Home({ onNavigate }) {
         <div style={{ marginBottom: 56 }}>
           <SectionHeading
             label="Getting started"
-            title="Four screens. One platform."
-            sub="Use each screen for a different mode of operation — or follow the sequence from templates to monitoring to AI to custom building."
+            title="Five operational surfaces. One platform."
+            sub="Follow the hero journey from treasury setup to payout monitoring — or jump directly into any surface from your dashboard."
           />
-          {/* Connector line */}
-          <div style={{ position: 'relative', display: 'flex', gap: 12 }}>
-            <div style={{ position: 'absolute', top: 16, left: 32, right: 32, height: 1, background: `linear-gradient(90deg, ${KColors.primary}40, ${KColors.primary}40)`, zIndex: 0, pointerEvents: 'none' }}/>
-            <ScreenCard
-              step={1}
-              icon="play-circle"
-              title="Workflows"
-              description="Select a pre-built template — Treasury Rebalance, Managed Crypto Treasury, and more. Fill in inputs and execute with one click. Track step-by-step progress in real time."
-              hint="Best for: standard operations"
-              onClick={() => onNavigate('templates')}
-            />
-            <ScreenCard
-              step={2}
-              icon="activity"
-              title="Operations"
-              description="View the full history of all workflow runs. Drill into any run to inspect step-level status, duration metrics, execution logs, and output payloads."
-              hint="Best for: monitoring & audit"
-              onClick={() => onNavigate('runs')}
-            />
-            <ScreenCard
-              step={3}
-              icon="cpu"
-              title="AI Assistant"
-              description="Describe any workflow in plain English. The AI interprets your intent, generates a structured workflow graph you can review and edit, then runs it end-to-end."
-              hint="Best for: custom operations"
-              onClick={() => onNavigate('assistant')}
-            />
-            <ScreenCard
-              step={4}
-              icon="git-branch"
-              title="Workflow Builder"
-              description="Drag and drop steps from the palette onto the canvas. Connect nodes to define execution order, edit parameters inline, and export as JSON."
-              hint="Best for: visual composition"
-              onClick={() => onNavigate('builder')}
-            />
+          <div style={{ position: 'relative', display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <ScreenCard step={1} icon="layout-dashboard" title="Dashboard" description="Your operational home — treasury summary, active workflows, alerts, and recent activity in one view." hint="Start here after onboarding" onClick={() => onNavigate(workspace ? 'dashboard' : 'onboarding')} />
+            <ScreenCard step={2} icon="wallet" title="Treasury" description="Create your operational wallet, view balance, funding instructions, and transaction history." hint="Fund before payouts" onClick={() => onNavigate('treasury')} />
+            <ScreenCard step={3} icon="users" title="Recipients" description="Maintain contractor payout destinations with wallet addresses and network metadata." hint="Contractor directory" onClick={() => onNavigate('recipients')} />
+            <ScreenCard step={4} icon="git-branch" title="Workflows" description="Configure recurring contractor payout workflows with schedules and guardrails." hint="Payout automation" onClick={() => onNavigate('workflows')} />
+            <ScreenCard step={5} icon="activity" title="Activity Centre" description="Review workflow runs, transfers, failures, and alerts in one operational timeline." hint="Monitor operations" onClick={() => onNavigate('activity')} />
           </div>
           <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
             <i data-lucide="info" style={{ width: 13, height: 13, color: KColors.fg3 }}></i>
@@ -289,25 +259,25 @@ function Home({ onNavigate }) {
 
         {/* ── USE CASES ── */}
         <div style={{ marginBottom: 56 }}>
-          <SectionHeading label="Use cases" title="From idea to deployment in minutes." sub="No developers. No months of integrations. No compromise on security."/>
+          <SectionHeading label="Use cases" title="From treasury funding to contractor payout." sub="Finance and operations teams run stablecoin payout programs without custom integrations or infrastructure projects."/>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
             <UseCaseCard
-              segment="SMEs & Financial Institutions"
-              useCase="Operating model design"
-              prompt="Define my crypto strategy and show example workflows."
-              steps={['AI analyzes goals', 'Generates operating model', 'Proposes workflow templates']}
+              segment="Finance Operations"
+              useCase="Weekly contractor payouts"
+              prompt="Pay my US contractor roster every Friday in USDC."
+              steps={['Fund treasury wallet', 'Maintain recipient directory', 'Schedule payout workflow', 'Monitor Activity Centre']}
             />
             <UseCaseCard
-              segment="Crypto-native SMEs"
-              useCase="Treasury diversification"
-              prompt="Accumulate ETH and earn yield on idle assets."
-              steps={['Onramp fiat → USDC', 'Trade to ETH via Coinbase', 'Custody at Fireblocks', 'Stake via Lido (optional)']}
+              segment="Treasury Teams"
+              useCase="Stablecoin treasury operations"
+              prompt="Show treasury balance and funding instructions for our payout program."
+              steps={['Create operational wallet', 'Deposit USDC funding', 'Track inbound/outbound transfers', 'Reconcile before each run']}
             />
             <UseCaseCard
-              segment="Fintechs & PSPs"
-              useCase="Stablecoin rewards"
-              prompt="Reward users who deposit over a set threshold."
-              steps={['Onramp stablecoin', 'Monitor deposit threshold', 'Trigger reward payout', 'Send notification']}
+              segment="Growth-stage Startups"
+              useCase="Contractor onboarding at scale"
+              prompt="Onboard new contractors and add them to the next payout batch."
+              steps={['Add recipient wallet + network', 'Validate payout destination', 'Attach to workflow schedule', 'Approve first automated run']}
             />
           </div>
         </div>
@@ -322,10 +292,10 @@ function Home({ onNavigate }) {
                 title="Sandbox MVP"
                 active={true}
                 items={[
-                  'Workflow engine with prebuilt templates',
-                  'AI assistant — natural language → workflow',
-                  'Sandbox: Banxa, Privy, Coinbase',
-                  'Full UI: Runner, AI Generator, Builder',
+                  'Workspace onboarding & operational dashboard',
+                  'Treasury, Recipients, Workflows, Activity Centre shells',
+                  'Sandbox integrations: Banxa, Privy, Coinbase',
+                  'Legacy MVP tools preserved for regression demos',
                   'FastAPI backend · PostgreSQL',
                 ]}
               />
