@@ -61,6 +61,13 @@ NFR-P1–P3 Performance · NFR-S1–S4 Security · NFR-R1–R2 Reliability · NF
 7. **E7 — Docker, local env & release discipline**
 8. **E8 — Post-MVP hardening and demo reliability**
 9. **E9 — AI runtime mode decoupling and safe rollout controls**
+10. **E10 — Onboarding & workspace foundation** (hero journey entry)
+11. **E11 — Treasury management** (wallet, balance, funding, history)
+12. **E12 — Recipient management** (contractor payout directory)
+13. **E13 — Workflow management (hero contractor payout)** (configure, run, schedule)
+14. **E14 — Activity centre** (unified operational timeline)
+15. **E15 — Monitoring & alerts** (failure visibility, exceptions)
+16. **E16 — AI workflow assistant (hero payout templates)** (NL → editable draft)
 
 ### Sprint sequencing update (2026-04-24)
 
@@ -69,6 +76,16 @@ Execution order for the next phase is:
 1. Continue backend-heavy delivery with **E5 -> E6 -> E7**
 2. Keep **E4** in maintenance-only mode (blocker fixes for testing only)
 3. Return to full **E4** integration/polish after backend epics stabilize
+
+### Sprint sequencing update (2026-05-01) — Phase 2 hero workflow
+
+Transform MVP into **Stablecoin Treasury & Contractor Payout Operations**. Canonical plan: `_bmad-output/planning-artifacts/phase-2-hero-workflow/epic-plan.md`.
+
+Execution order:
+
+1. **E10 → E11 → E12 → E13 → E14/E15 → E16**
+2. Additive transformation — reuse workflow engine, adapters, run/step model; do not rebuild platform
+3. Mock-first demos (`MOCK_MODE=true`); live AI optional via `AI_MOCK_MODE`
 
 ---
 
@@ -400,6 +417,18 @@ So that **messaging hierarchy, visual polish, and example content stay current w
 - **Given** latest design source in `Kinetic Design System`, **when** Home is synced, **then** updated Home visuals/content (cards, copy emphasis, use-case structure, roadmap wording) match that latest version.
 - **And** **given** app integration constraints, **when** Home is updated, **then** navigation actions still map to existing route IDs and other pages remain untouched.
 
+### Story 8.11: Documentation hygiene and naming/path alignment
+
+As a **project operator**,  
+I want **core project docs to reflect the current UI naming, routing paths, and agent context entry points**,  
+So that **contributors and demo stakeholders can follow accurate guidance without drift or confusion**.
+
+**Acceptance criteria**
+
+- **Given** canonical project docs (`readme.md`, `docs/demo-mvp-flow.md`, `docs/stakeholder-handoff.md`), **when** reviewed, **then** they use current tab naming (`Home`, `Workflows`, `Operations`, `AI Assistant`, `Workflow Builder (mock)`) and current UI pathing (`/ui-kit/`).
+- **And** **given** agent onboarding context, **when** reading `readme.md`, **then** it includes a clear pointer to `claude.md` for coding-agent project context.
+- **And** **given** this is a hygiene-only pass, **when** docs are updated, **then** no backend/API behavior or UI runtime logic changes are introduced.
+
 ---
 
 ## Epic 9: AI runtime mode decoupling and safe rollout controls
@@ -419,14 +448,344 @@ So that **I can test live OpenAI behavior without forcing Banxa/Privy/Coinbase i
 - **And** **given** startup validation for live AI execution, **when** AI runs in real mode, **then** required AI environment checks (e.g., API key presence) are enforced based on AI mode only.
 - **And** **given** AI service wiring, **when** service selection occurs, **then** it branches on the dedicated AI mode flag without changing adapter runtime logic.
 
-### Story 8.11: Documentation hygiene and naming/path alignment
+---
 
-As a **project operator**,  
-I want **core project docs to reflect the current UI naming, routing paths, and agent context entry points**,  
-So that **contributors and demo stakeholders can follow accurate guidance without drift or confusion**.
+## Epic 10: Onboarding & workspace foundation
 
-**Acceptance criteria**
+**Goal:** First-run onboarding, workspace creation, and operational navigation for the hero journey.
 
-- **Given** canonical project docs (`readme.md`, `docs/demo-mvp-flow.md`, `docs/stakeholder-handoff.md`), **when** reviewed, **then** they use current tab naming (`Home`, `Workflows`, `Operations`, `AI Assistant`, `Workflow Builder (mock)`) and current UI pathing (`/ui-kit/`).
-- **And** **given** agent onboarding context, **when** reading `readme.md`, **then** it includes a clear pointer to `claude.md` for coding-agent project context.
-- **And** **given** this is a hygiene-only pass, **when** docs are updated, **then** no backend/API behavior or UI runtime logic changes are introduced.
+### Story 10.1: Hero landing & positioning refresh
+
+As a **demo stakeholder**,  
+I want **the landing page to reflect Stablecoin Treasury & Contractor Payout Operations**,  
+So that **product positioning is clear within the first minute**.
+
+### Story 10.2: Workspace domain model & API
+
+As a **developer**,  
+I want **a persisted Workspace entity with create/read API**,  
+So that **all hero-domain data can be scoped to a workspace**.
+
+### Story 10.3: Onboarding wizard — create workspace
+
+As a **Finance Operations Manager**,  
+I want **a guided first-run flow to create my workspace**,  
+So that **I can start the hero journey without engineering support**.
+
+### Story 10.4: Operational navigation IA
+
+As a **user**,  
+I want **navigation for Dashboard, Treasury, Recipients, Workflows, Activity Centre, and Settings**,  
+So that **the app matches operational language**.
+
+### Story 10.5: Onboarding progress & empty states
+
+As a **first-time user**,  
+I want **clear next-step guidance after workspace creation**,  
+So that **I know to fund treasury, add recipients, and create a workflow**.
+
+### Story 10.6: Demo script & docs alignment
+
+As a **demo operator**,  
+I want **canonical docs aligned to the hero onboarding path**,  
+So that **stakeholder walkthroughs are repeatable in under 5 minutes**.
+
+---
+
+## Epic 11: Treasury management
+
+**Goal:** Treasury wallet lifecycle — create, balance, funding instructions, transaction history.
+
+### Story 11.1: Treasury & wallet domain models
+
+As a **developer**,  
+I want **Treasury and Wallet entities scoped to workspace**,  
+So that **operational stablecoin accounts are persisted**.
+
+### Story 11.2: Privy adapter — treasury wallet create
+
+As a **system**,  
+I want **wallet creation via the Privy adapter with mock-safe behavior**,  
+So that **treasury wallets can be created in demo and live modes**.
+
+### Story 11.3: Treasury create API & service
+
+As a **Treasury Manager**,  
+I want **to create a treasury wallet for my workspace**,  
+So that **I have an operational payout source**.
+
+### Story 11.4: Treasury balance read
+
+As a **Treasury Manager**,  
+I want **to see my treasury balance**,  
+So that **I know whether payouts can proceed**.
+
+### Story 11.5: Funding instructions UI
+
+As a **Treasury Manager**,  
+I want **deposit address, network, and copy-to-clipboard funding instructions**,  
+So that **I can fund my treasury efficiently**.
+
+### Story 11.6: Transaction history
+
+As a **Finance Operations Manager**,  
+I want **a list of treasury transfers with status and timestamps**,  
+So that **I can reconcile movements**.
+
+### Story 11.7: Treasury screen (UI)
+
+As a **user**,  
+I want **a dedicated Treasury screen per the UX spec**,  
+So that **wallet, balance, funding, and history are in one place**.
+
+### Story 11.8: Insufficient balance error state
+
+As a **user**,  
+I want **actionable errors when balance is too low for a payout**,  
+So that **I can fund treasury before retrying**.
+
+---
+
+## Epic 12: Recipient management
+
+**Goal:** CRUD contractor payout recipients as the destination layer for hero workflows.
+
+### Story 12.1: Recipient domain model & validation
+
+As a **developer**,  
+I want **a Recipient entity with address and network validation**,  
+So that **payout destinations are stored safely per workspace**.
+
+### Story 12.2: Recipient API (CRUD)
+
+As a **Finance Operations Manager**,  
+I want **API endpoints to manage recipients**,  
+So that **I can maintain a contractor directory**.
+
+### Story 12.3: Recipients list UI
+
+As a **user**,  
+I want **to view all recipients in my workspace**,  
+So that **I can manage payout destinations**.
+
+### Story 12.4: Add/edit recipient flows
+
+As a **user**,  
+I want **forms to add and edit recipients with validation**,  
+So that **errors are caught before payout configuration**.
+
+### Story 12.5: Delete/deactivate recipient
+
+As a **user**,  
+I want **to deactivate or remove recipients safely**,  
+So that **stale destinations do not break active workflows**.
+
+### Story 12.6: Recipient picker component
+
+As a **user**,  
+I want **a reusable recipient selector in workflow and AI flows**,  
+So that **I do not re-enter addresses manually**.
+
+---
+
+## Epic 13: Workflow management (hero contractor payout)
+
+**Goal:** User-configurable contractor payout workflows — configure, schedule, execute.
+
+### Story 13.1: WorkflowDefinition domain model
+
+As a **developer**,  
+I want **a persisted payout workflow definition**,  
+So that **users can configure recurring contractor payouts**.
+
+### Story 13.2: Hero contractor_payout template
+
+As a **system**,  
+I want **a contractor_payout workflow template**,  
+So that **balance check → transfer → complete runs through the existing engine**.
+
+### Story 13.3: Payout workflow CRUD API
+
+As a **Finance Operations Manager**,  
+I want **to create and edit payout workflows**,  
+So that **I can configure amount, asset, schedule, and recipient**.
+
+### Story 13.4: Manual workflow execution
+
+As a **user**,  
+I want **to manually run a payout workflow**,  
+So that **I can execute payouts on demand with step-level visibility**.
+
+### Story 13.5: Schedule configuration
+
+As a **user**,  
+I want **to set payout cadence (e.g. weekly)**,  
+So that **recurring payouts are represented in the system**.
+
+### Story 13.6: Enable/disable workflow
+
+As a **user**,  
+I want **to enable or disable a payout workflow**,  
+So that **paused payouts cannot execute accidentally**.
+
+### Story 13.7: Workflows management UI
+
+As a **user**,  
+I want **a UI to list, create, edit, run, and disable payout workflows**,  
+So that **workflow management matches the hero journey**.
+
+### Story 13.8: Pre-execution guardrails
+
+As a **system**,  
+I want **to block runs when balance is insufficient or recipient is missing**,  
+So that **failures are prevented where possible**.
+
+### Story 13.9: Hero demo migration
+
+As a **demo operator**,  
+I want **contractor_payout featured as the primary demo workflow**,  
+So that **stakeholders see the hero story first**.
+
+---
+
+## Epic 14: Activity centre
+
+**Goal:** Unified operational timeline for runs, transfers, errors, and events.
+
+### Story 14.1: Activity event taxonomy & model
+
+As a **developer**,  
+I want **an Activity model or projection with typed events**,  
+So that **operational history is queryable per workspace**.
+
+### Story 14.2: Ingest workflow run events
+
+As a **system**,  
+I want **workflow run lifecycle events in the activity feed**,  
+So that **executions appear in the timeline**.
+
+### Story 14.3: Ingest transfer events
+
+As a **system**,  
+I want **treasury transfer events in the activity feed**,  
+So that **money movements are visible alongside runs**.
+
+### Story 14.4: Activity API with filters
+
+As a **user**,  
+I want **a paginated, filterable activity API**,  
+So that **I can find relevant operational events**.
+
+### Story 14.5: Activity Centre UI
+
+As a **user**,  
+I want **a chronological activity timeline**,  
+So that **I can review everything that happened in one place**.
+
+### Story 14.6: Activity detail & cross-links
+
+As a **user**,  
+I want **to drill down from activity to run, recipient, or treasury details**,  
+So that **I can investigate without switching contexts**.
+
+### Story 14.7: Dashboard recent-activity widget
+
+As a **user**,  
+I want **recent activity on the Dashboard**,  
+So that **I see the latest operations at a glance**.
+
+---
+
+## Epic 15: Monitoring & alerts
+
+**Goal:** Failure visibility, alerts, and exception resolution for operational control.
+
+### Story 15.1: Alert domain model
+
+As a **developer**,  
+I want **an Alert entity linked to source failures**,  
+So that **exceptions are trackable per workspace**.
+
+### Story 15.2: Alerts on workflow failure
+
+As a **system**,  
+I want **failed workflow runs to create alerts**,  
+So that **users are notified of payout failures**.
+
+### Story 15.3: Alerts on transfer failure
+
+As a **system**,  
+I want **failed transfers to create alerts**,  
+So that **treasury issues are visible**.
+
+### Story 15.4: Alerts API
+
+As a **user**,  
+I want **to list and acknowledge alerts**,  
+So that **I can manage operational exceptions**.
+
+### Story 15.5: Dashboard alerts widget
+
+As a **user**,  
+I want **active alerts on the Dashboard**,  
+So that **failures are visible without opening Activity Centre**.
+
+### Story 15.6: Error state UX patterns
+
+As a **user**,  
+I want **consistent error UX for insufficient balance, transfer failed, and provider unavailable**,  
+So that **I know what to do next**.
+
+### Story 15.7: Exception resolution flow
+
+As a **user**,  
+I want **guidance to fund treasury, retry, or fix recipient after a failure**,  
+So that **I can resolve exceptions without support**.
+
+---
+
+## Epic 16: AI workflow assistant (hero payout templates)
+
+**Goal:** NL → editable hero payout workflow draft with confirm-before-save.
+
+### Story 16.1: Hero payout NL schema & prompt
+
+As a **developer**,  
+I want **AI output schema for payout workflows**,  
+So that **NL maps to recipient, amount, asset, and cadence**.
+
+### Story 16.2: Mock AI payout draft generator
+
+As a **demo operator**,  
+I want **deterministic mock AI for “Pay Alice 50 USDC every Friday”**,  
+So that **demos work without live OpenAI**.
+
+### Story 16.3: Recipient name resolution
+
+As a **system**,  
+I want **AI drafts to resolve recipient names to workspace recipients**,  
+So that **generated workflows reference valid destinations**.
+
+### Story 16.4: AI draft review UI
+
+As a **user**,  
+I want **to edit an AI-generated payout draft before saving**,  
+So that **I retain control and no auto-run occurs**.
+
+### Story 16.5: Save AI draft as WorkflowDefinition
+
+As a **user**,  
+I want **to save a confirmed AI draft as a payout workflow**,  
+So that **AI accelerates configuration without bypassing validation**.
+
+### Story 16.6: AI Assistant hero context & examples
+
+As a **user**,  
+I want **in-product payout examples in the AI Assistant**,  
+So that **I know how to describe contractor payout workflows**.
+
+### Story 16.7: Live OpenAI path & error handling
+
+As a **developer**,  
+I want **live AI payout generation with sanitized error envelopes**,  
+So that **production-like testing works via AI_MOCK_MODE=false**.

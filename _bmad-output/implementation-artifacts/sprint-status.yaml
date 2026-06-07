@@ -24,7 +24,7 @@
 #   - done: Retrospective has been completed
 
 generated: "2026-04-12T12:00:00Z"
-last_updated: "2026-05-01T13:12:00Z"
+last_updated: "2026-05-01T14:45:00Z"
 project: kinetic-mvp-bmad
 project_key: NOKEY
 tracking_system: file-system
@@ -87,3 +87,74 @@ development_status:
   epic-9: done
   9-1-decouple-ai-mock-mode-from-global-mock-mode: done
   epic-9-retrospective: optional
+
+  epic-10: backlog
+  10-1-hero-landing-and-positioning-refresh: backlog
+  10-2-workspace-domain-model-and-api: backlog
+  10-3-onboarding-wizard-create-workspace: backlog
+  10-4-operational-navigation-ia: backlog
+  10-5-onboarding-progress-and-empty-states: backlog
+  10-6-demo-script-and-docs-alignment: backlog
+  epic-10-retrospective: optional
+
+  epic-11: backlog
+  11-1-treasury-and-wallet-domain-models: backlog
+  11-2-privy-adapter-treasury-wallet-create: backlog
+  11-3-treasury-create-api-and-service: backlog
+  11-4-treasury-balance-read: backlog
+  11-5-funding-instructions-ui: backlog
+  11-6-transaction-history: backlog
+  11-7-treasury-screen-ui: backlog
+  11-8-insufficient-balance-error-state: backlog
+  epic-11-retrospective: optional
+
+  epic-12: backlog
+  12-1-recipient-domain-model-and-validation: backlog
+  12-2-recipient-api-crud: backlog
+  12-3-recipients-list-ui: backlog
+  12-4-add-edit-recipient-flows: backlog
+  12-5-delete-deactivate-recipient: backlog
+  12-6-recipient-picker-component: backlog
+  epic-12-retrospective: optional
+
+  epic-13: backlog
+  13-1-workflowdefinition-domain-model: backlog
+  13-2-hero-contractor-payout-template: backlog
+  13-3-payout-workflow-crud-api: backlog
+  13-4-manual-workflow-execution: backlog
+  13-5-schedule-configuration: backlog
+  13-6-enable-disable-workflow: backlog
+  13-7-workflows-management-ui: backlog
+  13-8-pre-execution-guardrails: backlog
+  13-9-hero-demo-migration: backlog
+  epic-13-retrospective: optional
+
+  epic-14: backlog
+  14-1-activity-event-taxonomy-and-model: backlog
+  14-2-ingest-workflow-run-events: backlog
+  14-3-ingest-transfer-events: backlog
+  14-4-activity-api-with-filters: backlog
+  14-5-activity-centre-ui: backlog
+  14-6-activity-detail-and-cross-links: backlog
+  14-7-dashboard-recent-activity-widget: backlog
+  epic-14-retrospective: optional
+
+  epic-15: backlog
+  15-1-alert-domain-model: backlog
+  15-2-alerts-on-workflow-failure: backlog
+  15-3-alerts-on-transfer-failure: backlog
+  15-4-alerts-api: backlog
+  15-5-dashboard-alerts-widget: backlog
+  15-6-error-state-ux-patterns: backlog
+  15-7-exception-resolution-flow: backlog
+  epic-15-retrospective: optional
+
+  epic-16: backlog
+  16-1-hero-payout-nl-schema-and-prompt: backlog
+  16-2-mock-ai-payout-draft-generator: backlog
+  16-3-recipient-name-resolution: backlog
+  16-4-ai-draft-review-ui: backlog
+  16-5-save-ai-draft-as-workflowdefinition: backlog
+  16-6-ai-assistant-hero-context-and-examples: backlog
+  16-7-live-openai-path-and-error-handling: backlog
+  epic-16-retrospective: optional
