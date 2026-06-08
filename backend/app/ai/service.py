@@ -7,6 +7,7 @@ from typing import Any
 import httpx
 
 from app.ai.interpreter import interpret_request
+from app.ai.payout_draft import normalize_payout_draft, parse_payout_draft_mock
 from app.core.config import Settings
 
 
@@ -55,6 +56,10 @@ def _normalize_workflow(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _normalize_payout_draft(payload: dict[str, Any]) -> dict[str, Any]:
+    return normalize_payout_draft(payload)
+
+
 @dataclass(frozen=True)
 class AiGenerationResult:
     workflow: dict[str, Any]
@@ -70,11 +75,22 @@ class BaseAiService:
     def generate_workflow(self, message: str) -> AiGenerationResult:  # pragma: no cover - interface
         raise NotImplementedError
 
+    def generate_payout_draft(self, message: str) -> AiGenerationResult:  # pragma: no cover - interface
+        raise NotImplementedError
+
 
 class MockAiService(BaseAiService):
     def generate_workflow(self, message: str) -> AiGenerationResult:
         return AiGenerationResult(
             workflow=interpret_request(message),
+            source="mock",
+            provider="mock",
+            model="rule-based",
+        )
+
+    def generate_payout_draft(self, message: str) -> AiGenerationResult:
+        return AiGenerationResult(
+            workflow=parse_payout_draft_mock(message),
             source="mock",
             provider="mock",
             model="rule-based",
@@ -86,6 +102,19 @@ class OpenAIAiService(BaseAiService):
         "You convert user workflow intents into strict JSON.\n"
         "Return JSON only with keys: workflow_name (string), business_summary (string), "
         "steps (array of {id, type, params}).\n"
+        "Do not include markdown or prose."
+    )
+    PAYOUT_SYSTEM_PROMPT = (
+        "You convert natural-language contractor payout requests into strict JSON.\n"
+        "Return JSON only with keys:\n"
+        "- draft_type: always contractor_payout\n"
+        "- name: short workflow name\n"
+        "- summary: one-sentence business summary\n"
+        "- recipient_name: extracted recipient name or null\n"
+        "- amount: positive number\n"
+        "- asset: USDC or USDT\n"
+        "- schedule_cadence: manual, weekly, or monthly\n"
+        "- schedule_day: weekday for weekly, day-of-month string for monthly, or null\n"
         "Do not include markdown or prose."
     )
 
@@ -115,6 +144,38 @@ class OpenAIAiService(BaseAiService):
         workflow = _normalize_workflow(_extract_json_object(content))
         return AiGenerationResult(
             workflow=workflow,
+            source="live",
+            provider="openai",
+            model=self.settings.ai_model,
+        )
+
+    def generate_payout_draft(self, message: str) -> AiGenerationResult:
+        body = {
+            "model": self.settings.ai_model,
+            "messages": [
+                {"role": "system", "content": self.PAYOUT_SYSTEM_PROMPT},
+                {"role": "user", "content": message},
+            ],
+            "temperature": 0.2,
+        }
+        headers = {
+            "Authorization": f"Bearer {self.settings.openai_api_key}",
+            "Content-Type": "application/json",
+        }
+        endpoint = f"{self.settings.openai_base_url}/chat/completions"
+        with httpx.Client(timeout=self.settings.ai_timeout_seconds) as client:
+            res = client.post(endpoint, headers=headers, json=body)
+            res.raise_for_status()
+            payload = res.json()
+        content = (
+            payload.get("choices", [{}])[0]
+            .get("message", {})
+            .get("content", "")
+        )
+        draft = _normalize_payout_draft(_extract_json_object(content))
+        draft["source_message"] = message.strip()
+        return AiGenerationResult(
+            workflow=draft,
             source="live",
             provider="openai",
             model=self.settings.ai_model,

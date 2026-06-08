@@ -11,6 +11,7 @@ from app.core.secrets_redact import redact_secrets_in_text
 from app.db.engine import get_engine
 from app.db.models import WorkflowRun, utcnow
 
+from app.ai.payout_resolver import resolve_recipient_for_draft
 from app.ai.service import get_ai_service
 from app.engine.graph_runner import run_graph
 from app.engine.metrics import compute_run_metrics
@@ -31,6 +32,11 @@ def get_db(settings: Settings = Depends(get_settings)):
 
 class InterpretRequest(BaseModel):
     message: str = Field(..., min_length=1)
+
+
+class PayoutDraftRequest(BaseModel):
+    message: str = Field(..., min_length=1)
+    recipient_id: int | None = None
 
 
 class RunGraphRequest(BaseModel):
@@ -63,12 +69,54 @@ def interpret(req: InterpretRequest, settings: Settings = Depends(get_settings))
     }
 
 
+@router.post("/payout-draft")
+def payout_draft(
+    req: PayoutDraftRequest,
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+):
+    try:
+        ai_service = get_ai_service(settings)
+        result = ai_service.generate_payout_draft(req.message)
+    except Exception as exc:
+        reason = redact_secrets_in_text(f"{type(exc).__name__}: {exc}", settings)
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "code": "AI_PAYOUT_DRAFT_FAILED",
+                "message": "AI payout draft generation failed",
+                "details": {"reason": reason},
+            },
+        )
+
+    draft = dict(result.workflow)
+    resolution = resolve_recipient_for_draft(
+        db,
+        recipient_name=draft.get("recipient_name"),
+        recipient_id=req.recipient_id,
+    )
+    draft.update(resolution)
+    draft["warnings"] = list(draft.get("warnings") or []) + list(resolution.get("warnings") or [])
+
+    return {
+        **draft,
+        "meta": {
+            "source": result.source,
+            "provider": result.provider,
+            "model": result.model,
+            "mock_mode": settings.ai_mock_mode,
+            "draft_type": "contractor_payout",
+        },
+    }
+
+
 @router.get("/capabilities")
 def capabilities(settings: Settings = Depends(get_settings)):
     return {
         "mock_mode": settings.ai_mock_mode,
         "provider": "mock" if settings.ai_mock_mode else settings.ai_provider,
         "model": "rule-based" if settings.ai_mock_mode else settings.ai_model,
+        "payout_draft_supported": True,
     }
 
 

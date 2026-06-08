@@ -1,7 +1,12 @@
-// Kinetic — AI Workflow Generator Screen
+// Kinetic — AI Workflow Assistant (hero payout drafts + legacy graph mode)
 
-const EXAMPLE_PROMPTS = [
+const HERO_EXAMPLE_PROMPTS = [
+  'Pay Alice 50 USDC every Friday',
   'Pay my contractor roster every Friday in USDC',
+  'Send 100 USDC to Bob on the 1st of each month',
+];
+
+const LEGACY_EXAMPLE_PROMPTS = [
   'Buy BTC and withdraw to wallet',
   'Create a wallet for me',
   'Fund wallet with USDC',
@@ -12,8 +17,8 @@ const MOCK_WORKFLOWS = {
     workflow_name: 'buy_btc_withdraw',
     business_summary: 'Buy Bitcoin on the exchange and withdraw it to a destination wallet.',
     steps: [
-      { id: 'step_1', type: 'coinbase.buy',      params: { asset: 'BTC', amount: 100, currency: 'USD' } },
-      { id: 'step_2', type: 'coinbase.withdraw',  params: { asset: 'BTC', destination: '0xWALLET' } },
+      { id: 'step_1', type: 'coinbase.buy', params: { asset: 'BTC', amount: 100, currency: 'USD' } },
+      { id: 'step_2', type: 'coinbase.withdraw', params: { asset: 'BTC', destination: '0xWALLET' } },
     ],
   },
   'Create a wallet for me': {
@@ -27,11 +32,21 @@ const MOCK_WORKFLOWS = {
     workflow_name: 'fund_wallet_usdc',
     business_summary: 'On-ramp fiat to USDC and deliver to an existing wallet.',
     steps: [
-      { id: 'step_1', type: 'banxa.onramp',  params: { fiat_amount: 500, fiat_currency: 'USD', crypto_currency: 'USDC' } },
+      { id: 'step_1', type: 'banxa.onramp', params: { fiat_amount: 500, fiat_currency: 'USD', crypto_currency: 'USDC' } },
       { id: 'step_2', type: 'privy.deposit', params: { asset: 'USDC', destination: '0xWALLET' } },
     ],
   },
 };
+
+const WEEKDAY_OPTIONS = [
+  { value: 'monday', label: 'Monday' },
+  { value: 'tuesday', label: 'Tuesday' },
+  { value: 'wednesday', label: 'Wednesday' },
+  { value: 'thursday', label: 'Thursday' },
+  { value: 'friday', label: 'Friday' },
+  { value: 'saturday', label: 'Saturday' },
+  { value: 'sunday', label: 'Sunday' },
+];
 
 function getFallbackWorkflow(prompt) {
   return {
@@ -39,7 +54,7 @@ function getFallbackWorkflow(prompt) {
     business_summary: `Execute: "${prompt}"`,
     steps: [
       { id: 'step_1', type: 'engine.interpret', params: { prompt, model: 'gpt-4o' } },
-      { id: 'step_2', type: 'engine.execute',   params: { dry_run: false } },
+      { id: 'step_2', type: 'engine.execute', params: { dry_run: false } },
     ],
   };
 }
@@ -58,8 +73,19 @@ async function apiPost(path, body) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error(`Request failed: ${res.status}`);
-  return res.json();
+  const payload = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const message = payload.message || payload.detail?.message || `Request failed: ${res.status}`;
+    throw new Error(message);
+  }
+  return payload;
+}
+
+function resolveRecipientId(value) {
+  if (value == null || value === '') return null;
+  if (typeof value === 'object' && value.id != null) return Number(value.id);
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function StepCard({ step, idx }) {
@@ -74,15 +100,43 @@ function StepCard({ step, idx }) {
   );
 }
 
-function AIGenerator() {
+function DraftField({ label, children }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div style={{ fontSize: 11, fontWeight: 600, color: KColors.fg3 }}>{label}</div>
+      {children}
+    </div>
+  );
+}
+
+function inputStyle() {
+  return {
+    fontFamily: 'inherit',
+    fontSize: 13,
+    width: '100%',
+    padding: '8px 10px',
+    boxSizing: 'border-box',
+    background: KColors.sunken,
+    color: KColors.fg1,
+    border: `1px solid ${KColors.borderStrong}`,
+    borderRadius: 4,
+    outline: 'none',
+  };
+}
+
+function AIGenerator({ onNavigate }) {
+  const [assistantMode, setAssistantMode] = React.useState('payout');
   const [prompt, setPrompt] = React.useState('');
-  const [genState, setGenState] = React.useState('idle'); // idle | generating | ready
-  const [runState, setRunState] = React.useState('idle'); // idle | running | done
+  const [genState, setGenState] = React.useState('idle');
+  const [runState, setRunState] = React.useState('idle');
   const [workflow, setWorkflow] = React.useState(null);
   const [workflowJson, setWorkflowJson] = React.useState('{}');
+  const [payoutDraft, setPayoutDraft] = React.useState(null);
+  const [saveState, setSaveState] = React.useState('idle');
+  const [savedWorkflow, setSavedWorkflow] = React.useState(null);
   const [stepStatuses, setStepStatuses] = React.useState([]);
   const [runSummary, setRunSummary] = React.useState(null);
-  const [runId, setRunId] = React.useState(() => Math.random().toString(36).slice(2,10));
+  const [runId, setRunId] = React.useState(() => Math.random().toString(36).slice(2, 10));
   const [modeInfo, setModeInfo] = React.useState({ mock_mode: true, provider: 'mock', model: 'rule-based' });
   const [apiError, setApiError] = React.useState('');
   const [payoutRecipient, setPayoutRecipient] = React.useState(null);
@@ -107,14 +161,70 @@ function AIGenerator() {
     return () => { cancelled = true; };
   }, []);
 
-  async function handleGenerate() {
+  function resetOutputs() {
+    setWorkflow(null);
+    setPayoutDraft(null);
+    setSavedWorkflow(null);
+    setRunState('idle');
+    setSaveState('idle');
+    setStepStatuses([]);
+    setRunSummary(null);
+  }
+
+  function updateDraftField(field, value) {
+    setPayoutDraft(prev => (prev ? { ...prev, [field]: value } : prev));
+  }
+
+  async function handleGeneratePayout() {
     if (!prompt.trim() || genState === 'generating') return;
     setApiError('');
     setGenState('generating');
-    setWorkflow(null);
-    setRunState('idle');
-    setStepStatuses([]);
-    setRunSummary(null);
+    resetOutputs();
+
+    const recipientId = resolveRecipientId(payoutRecipient);
+    try {
+      const payload = await apiPost('/ai/payout-draft', {
+        message: prompt.trim(),
+        recipient_id: recipientId,
+      });
+      setPayoutDraft({
+        draft_type: payload.draft_type || 'contractor_payout',
+        name: payload.name || 'Contractor payout',
+        summary: payload.summary || '',
+        recipient_name: payload.recipient_name || null,
+        recipient_id: payload.recipient_id || null,
+        recipient: payload.recipient || null,
+        recipient_resolved: Boolean(payload.recipient_resolved),
+        amount: Number(payload.amount) || 50,
+        asset: payload.asset || 'USDC',
+        schedule_cadence: payload.schedule_cadence || 'manual',
+        schedule_day: payload.schedule_day || null,
+        warnings: payload.warnings || [],
+        source_message: payload.source_message || prompt.trim(),
+      });
+      if (payload.recipient) {
+        setPayoutRecipient(payload.recipient);
+      }
+      if (payload.meta) {
+        setModeInfo({
+          mock_mode: Boolean(payload.meta.mock_mode),
+          provider: String(payload.meta.provider || 'mock'),
+          model: String(payload.meta.model || 'rule-based'),
+        });
+      }
+      setGenState('ready');
+      return;
+    } catch (err) {
+      setApiError(err.message || 'Payout draft API unavailable.');
+      setGenState('idle');
+    }
+  }
+
+  async function handleGenerateGraph() {
+    if (!prompt.trim() || genState === 'generating') return;
+    setApiError('');
+    setGenState('generating');
+    resetOutputs();
 
     try {
       const payload = await apiPost('/ai/interpret', { message: prompt.trim() });
@@ -146,8 +256,43 @@ function AIGenerator() {
     setGenState('ready');
   }
 
+  function handleGenerate() {
+    if (assistantMode === 'payout') {
+      handleGeneratePayout();
+    } else {
+      handleGenerateGraph();
+    }
+  }
+
+  async function handleSavePayoutDraft() {
+    if (!payoutDraft || saveState === 'saving') return;
+    const recipientId = resolveRecipientId(payoutRecipient) || payoutDraft.recipient_id;
+    if (!recipientId) {
+      setApiError('Select a recipient before saving the workflow.');
+      return;
+    }
+    setApiError('');
+    setSaveState('saving');
+    try {
+      const body = {
+        name: payoutDraft.name,
+        recipient_id: recipientId,
+        amount: Number(payoutDraft.amount),
+        asset: payoutDraft.asset || 'USDC',
+        schedule_cadence: payoutDraft.schedule_cadence || 'manual',
+        schedule_day: payoutDraft.schedule_day || null,
+      };
+      const saved = await apiPost('/payout-workflows', body);
+      setSavedWorkflow(saved);
+      setSaveState('saved');
+    } catch (err) {
+      setApiError(err.message || 'Could not save payout workflow.');
+      setSaveState('idle');
+    }
+  }
+
   async function handleRun() {
-    if (runState === 'running' || genState !== 'ready') return;
+    if (runState === 'running' || genState !== 'ready' || !workflow) return;
     let wf;
     try { wf = JSON.parse(workflowJson); } catch { return; }
     setRunState('running');
@@ -198,17 +343,45 @@ function AIGenerator() {
   }
 
   const currentWorkflow = (() => { try { return JSON.parse(workflowJson); } catch { return null; } })();
+  const examplePrompts = assistantMode === 'payout' ? HERO_EXAMPLE_PROMPTS : LEGACY_EXAMPLE_PROMPTS;
+  const canSavePayout = Boolean(payoutDraft) && (resolveRecipientId(payoutRecipient) || payoutDraft?.recipient_id);
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', height: '100%', overflow: 'hidden' }}>
-      {/* Left panel */}
       <div style={{ borderRight: `1px solid ${KColors.border}`, padding: 20, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button
+            onClick={() => { setAssistantMode('payout'); resetOutputs(); setGenState('idle'); setApiError(''); }}
+            style={{
+              flex: 1, fontSize: 12, padding: '6px 10px', borderRadius: 6, cursor: 'pointer', fontFamily: 'inherit',
+              background: assistantMode === 'payout' ? KColors.primaryDim : 'transparent',
+              color: assistantMode === 'payout' ? KColors.primaryLight : KColors.fg2,
+              border: `1px solid ${assistantMode === 'payout' ? KColors.primary : KColors.borderStrong}`,
+            }}
+          >
+            Payout workflow
+          </button>
+          <button
+            onClick={() => { setAssistantMode('graph'); resetOutputs(); setGenState('idle'); setApiError(''); }}
+            style={{
+              flex: 1, fontSize: 12, padding: '6px 10px', borderRadius: 6, cursor: 'pointer', fontFamily: 'inherit',
+              background: assistantMode === 'graph' ? KColors.primaryDim : 'transparent',
+              color: assistantMode === 'graph' ? KColors.primaryLight : KColors.fg2,
+              border: `1px solid ${assistantMode === 'graph' ? KColors.primary : KColors.borderStrong}`,
+            }}
+          >
+            Advanced graph
+          </button>
+        </div>
+
         <div>
           <KSectionLabel>Your request</KSectionLabel>
           <textarea
             value={prompt}
             onChange={e => setPrompt(e.target.value)}
-            placeholder="Describe the financial workflow you want…"
+            placeholder={assistantMode === 'payout'
+              ? 'Describe a contractor payout workflow…'
+              : 'Describe the financial workflow you want…'}
             onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleGenerate(); }}
             style={{
               fontFamily: 'inherit', fontSize: 14, width: '100%', minHeight: 100,
@@ -218,11 +391,13 @@ function AIGenerator() {
             }}
           />
           <div style={{ marginTop: 8 }}>
-            <div style={{ fontSize: 11, color: KColors.fg3, marginBottom: 6 }}>Try an example:</div>
+            <div style={{ fontSize: 11, color: KColors.fg3, marginBottom: 6 }}>
+              {assistantMode === 'payout' ? 'Try a payout example:' : 'Try an example:'}
+            </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {EXAMPLE_PROMPTS.map(p => (
+              {examplePrompts.map(p => (
                 <button key={p} onClick={() => setPrompt(p)}
-                  style={{ fontSize: 11, padding: '4px 10px', borderRadius: 9999, background: 'transparent', color: KColors.fg2, border: `1px solid ${KColors.borderStrong}`, cursor: 'pointer', fontFamily: 'inherit', transition: 'border-color 120ms ease-out, color 120ms ease-out' }}>
+                  style={{ fontSize: 11, padding: '4px 10px', borderRadius: 9999, background: 'transparent', color: KColors.fg2, border: `1px solid ${KColors.borderStrong}`, cursor: 'pointer', fontFamily: 'inherit' }}>
                   {p}
                 </button>
               ))}
@@ -230,68 +405,176 @@ function AIGenerator() {
           </div>
         </div>
 
-        <div>
-          <KSectionLabel>Payout recipient (optional)</KSectionLabel>
-          <RecipientPicker
-            value={payoutRecipient}
-            onChange={setPayoutRecipient}
-            hint="Attach a contractor from your directory for payout-oriented drafts"
-            disabled={genState === 'generating'}
-          />
-        </div>
+        {assistantMode === 'payout' && (
+          <div>
+            <KSectionLabel>Recipient (optional hint)</KSectionLabel>
+            <RecipientPicker
+              value={payoutRecipient}
+              onChange={setPayoutRecipient}
+              hint="Pre-select a recipient or let AI match a name from your directory"
+              disabled={genState === 'generating'}
+            />
+          </div>
+        )}
 
         <div style={{ display: 'flex', gap: 8 }}>
           <KButton onClick={handleGenerate} disabled={genState === 'generating' || !prompt.trim()} style={{ flex: 1, justifyContent: 'center' }}>
-            {genState === 'generating' ? 'Generating…' : 'Generate workflow'}
+            {genState === 'generating' ? 'Generating…' : assistantMode === 'payout' ? 'Generate draft' : 'Generate workflow'}
           </KButton>
-          <KButton variant="secondary" onClick={handleRun} disabled={genState !== 'ready' || runState === 'running'} style={{ flex: 1, justifyContent: 'center' }}>
-            {runState === 'running' ? 'Running…' : 'Run workflow'}
-          </KButton>
+          {assistantMode === 'graph' && (
+            <KButton variant="secondary" onClick={handleRun} disabled={genState !== 'ready' || runState === 'running'} style={{ flex: 1, justifyContent: 'center' }}>
+              {runState === 'running' ? 'Running…' : 'Run workflow'}
+            </KButton>
+          )}
         </div>
+
         <div style={{ fontSize: 11, color: KColors.fg3 }}>
           Mode: {modeInfo.mock_mode ? 'mock' : `live (${modeInfo.provider}/${modeInfo.model})`}
         </div>
+        {assistantMode === 'payout' && (
+          <div style={{ fontSize: 11, color: KColors.fg3 }}>
+            Review and edit the draft before saving. Workflows are not auto-run.
+          </div>
+        )}
         {apiError && <div style={{ fontSize: 11, color: KColors.warning }}>{apiError}</div>}
 
-        {/* Workflow card */}
-        {workflow && (
+        {assistantMode === 'payout' && payoutDraft && (
+          <div style={{ background: KColors.overlay, border: `1px solid ${KColors.border}`, borderRadius: 8, padding: 14 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: KColors.fg1, marginBottom: 4 }}>{payoutDraft.name}</div>
+            <div style={{ fontSize: 12, color: KColors.fg3, marginBottom: 10 }}>{payoutDraft.summary}</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              <KPill status="default">{payoutDraft.amount} {payoutDraft.asset}</KPill>
+              <KPill status={payoutDraft.recipient_resolved ? 'success' : 'warning'}>
+                {payoutDraft.recipient_resolved ? 'Recipient matched' : 'Recipient needed'}
+              </KPill>
+            </div>
+          </div>
+        )}
+
+        {assistantMode === 'graph' && workflow && (
           <div style={{ background: KColors.overlay, border: `1px solid ${KColors.border}`, borderRadius: 8, padding: 14 }}>
             <div style={{ fontSize: 14, fontWeight: 600, color: KColors.fg1, marginBottom: 4 }}>{workflow.workflow_name}</div>
             <div style={{ fontSize: 12, color: KColors.fg3, marginBottom: 10 }}>{workflow.business_summary}</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               <KPill status="default">{workflow.steps.length} step{workflow.steps.length !== 1 ? 's' : ''}</KPill>
-              {[...new Set(workflow.steps.map(s => s.type.split('.')[0]))].map(t => (
-                <span key={t} style={{ display: 'inline-flex', padding: '3px 9px', borderRadius: 9999, background: KColors.primaryDim, color: KColors.primaryLight, fontSize: 11, fontWeight: 500 }}>{t}</span>
-              ))}
             </div>
           </div>
         )}
       </div>
 
-      {/* Right panel */}
       <div style={{ padding: 24, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
         {genState === 'idle' && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 200, gap: 8 }}>
-            <div style={{ fontSize: 14, color: KColors.fg3 }}>Describe a workflow to get started.</div>
+            <div style={{ fontSize: 14, color: KColors.fg3 }}>
+              {assistantMode === 'payout'
+                ? 'Describe a contractor payout to generate an editable draft.'
+                : 'Describe a workflow to get started.'}
+            </div>
           </div>
         )}
 
         {genState === 'generating' && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 200, gap: 8 }}>
-            <div style={{ fontSize: 14, color: KColors.fg2 }}>Generating workflow…</div>
+            <div style={{ fontSize: 14, color: KColors.fg2 }}>Generating…</div>
           </div>
         )}
 
-        {(genState === 'ready') && workflow && (
+        {assistantMode === 'payout' && genState === 'ready' && payoutDraft && (
+          <>
+            <div>
+              <KSectionLabel>Review payout draft</KSectionLabel>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <DraftField label="Workflow name">
+                  <input style={inputStyle()} value={payoutDraft.name} onChange={e => updateDraftField('name', e.target.value)} />
+                </DraftField>
+                <DraftField label="Amount">
+                  <input style={inputStyle()} type="number" min="0" step="0.01" value={payoutDraft.amount}
+                    onChange={e => updateDraftField('amount', Number(e.target.value))} />
+                </DraftField>
+                <DraftField label="Asset">
+                  <select style={inputStyle()} value={payoutDraft.asset} onChange={e => updateDraftField('asset', e.target.value)}>
+                    <option value="USDC">USDC</option>
+                    <option value="USDT">USDT</option>
+                  </select>
+                </DraftField>
+                <DraftField label="Schedule">
+                  <select style={inputStyle()} value={payoutDraft.schedule_cadence}
+                    onChange={e => updateDraftField('schedule_cadence', e.target.value)}>
+                    <option value="manual">Manual run only</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                  </select>
+                </DraftField>
+                {payoutDraft.schedule_cadence === 'weekly' && (
+                  <DraftField label="Weekday">
+                    <select style={inputStyle()} value={payoutDraft.schedule_day || 'friday'}
+                      onChange={e => updateDraftField('schedule_day', e.target.value)}>
+                      {WEEKDAY_OPTIONS.map(opt => (
+                        <option key={opt.value} value={opt.value}>{opt.label}</option>
+                      ))}
+                    </select>
+                  </DraftField>
+                )}
+                {payoutDraft.schedule_cadence === 'monthly' && (
+                  <DraftField label="Day of month (1–28)">
+                    <input style={inputStyle()} value={payoutDraft.schedule_day || '1'}
+                      onChange={e => updateDraftField('schedule_day', e.target.value)} />
+                  </DraftField>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <KSectionLabel>Recipient</KSectionLabel>
+              <RecipientPicker
+                value={payoutRecipient}
+                onChange={setPayoutRecipient}
+                hint="Confirm the payout destination before saving"
+                error={!canSavePayout ? 'Select a recipient to enable save' : ''}
+              />
+              {!payoutDraft.recipient_resolved && onNavigate && (
+                <div style={{ marginTop: 8 }}>
+                  <KButton size="sm" variant="secondary" onClick={() => onNavigate('recipients')}>
+                    Add recipient
+                  </KButton>
+                </div>
+              )}
+            </div>
+
+            {(payoutDraft.warnings || []).length > 0 && (
+              <div style={{ padding: 12, background: KColors.overlay, border: `1px solid ${KColors.border}`, borderRadius: 8 }}>
+                <KSectionLabel>Resolution notes</KSectionLabel>
+                <ul style={{ margin: '6px 0 0', paddingLeft: 18, fontSize: 12, color: KColors.fg2 }}>
+                  {payoutDraft.warnings.map((warning, idx) => (
+                    <li key={idx}>{warning}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <KButton onClick={handleSavePayoutDraft} disabled={!canSavePayout || saveState === 'saving'}>
+                {saveState === 'saving' ? 'Saving…' : 'Save as payout workflow'}
+              </KButton>
+              {saveState === 'saved' && savedWorkflow && (
+                <span style={{ fontSize: 12, color: KColors.success }}>
+                  Saved workflow #{savedWorkflow.id}. Run it from the Workflows page.
+                </span>
+              )}
+            </div>
+          </>
+        )}
+
+        {assistantMode === 'graph' && genState === 'ready' && workflow && (
           <>
             <div>
               <KSectionLabel>Generated steps</KSectionLabel>
-              {workflow.steps.map((step, idx) => <StepCard key={step.id} step={step} idx={idx}/>)}
+              {workflow.steps.map((step, idx) => <StepCard key={step.id} step={step} idx={idx} />)}
             </div>
 
             <div>
               <KSectionLabel>Generated JSON (editable)</KSectionLabel>
-              <KCodeBlock value={workflowJson} onChange={setWorkflowJson} minHeight={180}/>
+              <KCodeBlock value={workflowJson} onChange={setWorkflowJson} minHeight={180} />
             </div>
 
             {runState !== 'idle' && (
@@ -305,7 +588,7 @@ function AIGenerator() {
                       status: stepStatuses[i]?.status || 'pending',
                       duration_ms: stepStatuses[i]?.duration_ms ?? null,
                     }))
-                  }/>
+                  } />
                 </div>
 
                 {runSummary && (
@@ -313,18 +596,6 @@ function AIGenerator() {
                     <KPill status={runSummary.status}>{runSummary.status}</KPill>
                     <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 12, color: KColors.fg3 }}>Run ID: {runId}</span>
                     <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 12, color: KColors.fg3 }}>{runSummary.duration_ms} ms</span>
-                  </div>
-                )}
-
-                {runState === 'done' && (
-                  <div>
-                    <KSectionLabel>Output</KSectionLabel>
-                    <KCodeBlock readOnly value={JSON.stringify({
-                      run_id: runId,
-                      workflow_name: workflow.workflow_name,
-                      status: runSummary?.status || 'completed',
-                      output: { steps_executed: workflow.steps.length, duration_ms: runSummary?.duration_ms },
-                    }, null, 2)} minHeight={120}/>
                   </div>
                 )}
               </>

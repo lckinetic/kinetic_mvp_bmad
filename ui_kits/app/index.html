@@ -79,7 +79,7 @@ const ROUTE_META = {
   onboarding: { id: 'onboarding', icon: 'rocket', label: 'Onboarding', title: 'Get started', subtitle: 'Create your workspace and begin the hero journey.' },
   templates: { id: 'templates', icon: 'layout-template', label: 'Legacy templates', title: 'Legacy workflow templates', subtitle: 'Prebuilt MVP templates for demo regression.' },
   runs: { id: 'runs', icon: 'history', label: 'Legacy operations', title: 'Legacy operations', subtitle: 'Historical workflow run list from the MVP runner.' },
-  assistant: { id: 'assistant', icon: 'sparkles', label: 'AI Assistant', title: 'AI Assistant', subtitle: 'Generate a workflow proposal from natural language.' },
+  assistant: { id: 'assistant', icon: 'sparkles', label: 'AI Assistant', title: 'AI Assistant', subtitle: 'Describe contractor payouts in natural language and save an editable draft.' },
   builder: { id: 'builder', icon: 'git-branch', label: 'Workflow Builder (mock)', title: 'Workflow Builder (mock)', subtitle: 'Visually compose and edit a workflow graph.' },
 };
 
@@ -418,7 +418,7 @@ function App() {
       return <RunsLanding/>;
     }
     if (page === 'assistant') {
-      return <AIGenerator/>;
+      return <AIGenerator onNavigate={navigate} />;
     }
     if (page === 'builder') {
       return <WorkflowBuilder/>;

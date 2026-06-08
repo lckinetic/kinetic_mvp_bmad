@@ -249,7 +249,7 @@ function Home({ onNavigate, onStartOnboarding, workspace }) {
               bullets={[
                 'Visual workflow builder (drag & drop)',
                 'Pre-built workflow templates',
-                'AI assistant — natural language → runnable workflow',
+                'AI assistant — natural language → editable payout workflow draft',
                 'Real-time monitoring & audit logs',
                 'Custom logic support — if/then conditions',
               ]}

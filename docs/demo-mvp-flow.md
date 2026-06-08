@@ -27,7 +27,10 @@ This is the canonical walkthrough for product demos after Phase 2 Sprint 1 (hero
 13. Return to **Dashboard** and confirm recent activity shows the latest events.
 14. Trigger a blocked payout (run workflow with insufficient balance) and confirm an alert appears on the Dashboard with **Fund treasury** recovery guidance.
 15. Acknowledge the alert and confirm it is de-emphasized; open **Activity Centre** and confirm a **Payout blocked** event appears for the failed run attempt.
-16. Open **Settings** → **Advanced** to reach legacy MVP tools if needed.
+16. Open **Settings** → **Advanced** → **AI Assistant** (or navigate via legacy tools).
+17. In **Payout workflow** mode, try **Pay Alice 50 USDC every Friday** — confirm draft shows amount, schedule, and matched recipient.
+18. Edit the draft if needed, then **Save as payout workflow** (no auto-run). Open **Workflows** and run the saved workflow.
+19. Open **Settings** → **Advanced** to reach other legacy MVP tools if needed.
 
 ## Legacy demo path (regression)
 
@@ -35,7 +38,7 @@ This is the canonical walkthrough for product demos after Phase 2 Sprint 1 (hero
 2. Select **Managed Crypto Treasury** in the template list.
 3. Click **Run workflow** and complete a run in the runner.
 4. Open **Legacy operations** and confirm run detail is visible.
-5. Open **AI Assistant** and generate a workflow from a prompt.
+5. Open **AI Assistant** → **Advanced graph** and generate a legacy graph workflow from a prompt.
 6. Open **Workflow Builder (mock)** and verify graph editing is reachable.
 
 ## Optional live-AI segment

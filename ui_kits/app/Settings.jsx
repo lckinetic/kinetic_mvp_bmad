@@ -19,7 +19,9 @@ function Settings({ workspace, onNavigate, aiCapabilities }) {
         <KPill status={aiCapabilities?.mock_mode ? 'pending' : 'completed'}>
           {aiCapabilities?.mock_mode ? 'Sandbox demo mode' : 'Live AI enabled'}
         </KPill>
-        <div style={{ fontSize: 12, color: KColors.fg3, lineHeight: 1.55 }}>Operational payout flows remain demo-safe until Sprint 2 treasury and workflow APIs are connected.</div>
+        <div style={{ fontSize: 12, color: KColors.fg3, lineHeight: 1.55 }}>
+          Treasury, recipients, workflows, and activity run in sandbox demo mode by default. Set <code style={{ fontFamily: 'IBM Plex Mono, monospace' }}>AI_MOCK_MODE=false</code> with a valid OpenAI key for live payout draft generation.
+        </div>
       </div>
 
       <div style={{ background: KColors.overlay, border: `1px solid ${KColors.border}`, borderRadius: 10, padding: 18, display: 'flex', flexDirection: 'column', gap: 10 }}>

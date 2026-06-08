@@ -149,12 +149,12 @@ development_status:
   15-7-exception-resolution-flow: done
   epic-15-retrospective: optional
 
-  epic-16: backlog
-  16-1-hero-payout-nl-schema-and-prompt: backlog
-  16-2-mock-ai-payout-draft-generator: backlog
-  16-3-recipient-name-resolution: backlog
-  16-4-ai-draft-review-ui: backlog
-  16-5-save-ai-draft-as-workflowdefinition: backlog
-  16-6-ai-assistant-hero-context-and-examples: backlog
-  16-7-live-openai-path-and-error-handling: backlog
+  epic-16: done
+  16-1-hero-payout-nl-schema-and-prompt: done
+  16-2-mock-ai-payout-draft-generator: done
+  16-3-recipient-name-resolution: done
+  16-4-ai-draft-review-ui: done
+  16-5-save-ai-draft-as-workflowdefinition: done
+  16-6-ai-assistant-hero-context-and-examples: done
+  16-7-live-openai-path-and-error-handling: done
   epic-16-retrospective: optional

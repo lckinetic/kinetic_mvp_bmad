@@ -69,6 +69,11 @@ def test_operational_screens_wire_checklist_progression() -> None:
     assert "resolveRecipientValue" in picker
     assert "<RecipientPicker" in ops_shell
     assert "<RecipientPicker" in ai_generator
+    assert "Pay Alice 50 USDC every Friday" in ai_generator
+    assert "Save as payout workflow" in ai_generator
+    assert "/ai/payout-draft" in ai_generator
+    assert "Add recipient" in ai_generator
+    assert "onNavigate('recipients')" in ai_generator
     assert "Create payout workflow" in ops_shell
     assert "onChecklistStep('firstRun')" in ops_shell
     activity = (Path(__file__).resolve().parents[3] / "ui_kits" / "app" / "Activity.jsx").read_text(encoding="utf-8")
