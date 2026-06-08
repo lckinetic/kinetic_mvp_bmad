@@ -290,3 +290,46 @@ def record_outbound_transfer(
 
     ingest_transfer_activity(db, transfer=transfer)
     return transfer
+
+
+def simulate_failed_outbound_transfer(
+    db: Session,
+    *,
+    settings: Settings,
+    amount: float,
+    counterparty_label: str = "Demo failed payout",
+) -> dict[str, Any]:
+    if not settings.mock_mode:
+        raise MockOnlyOperationError("Simulated failed payouts are only available in mock mode.")
+
+    if amount <= 0:
+        raise ValueError("Transfer amount must be greater than zero.")
+
+    view = get_current_treasury(db, settings=settings)
+    treasury_id = view["id"]
+    workspace_id = view["workspace_id"]
+
+    fp = f"mock_failed_payout_{treasury_id}_{int(utcnow().timestamp())}"
+    transfer = TreasuryTransfer(
+        treasury_id=treasury_id,
+        workspace_id=workspace_id,
+        direction="outbound",
+        amount=round(amount, 2),
+        asset="USDC",
+        status="failed",
+        counterparty_label=counterparty_label,
+        reference=fp,
+        error_message="Mock treasury transfer failed for demo alert path.",
+    )
+    db.add(transfer)
+    db.commit()
+    db.refresh(transfer)
+
+    from app.services.activity_service import ingest_transfer_activity
+
+    ingest_transfer_activity(db, transfer=transfer)
+
+    return {
+        "transfer": serialize_transfer(transfer),
+        "treasury": get_current_treasury(db, settings=settings),
+    }

@@ -188,7 +188,7 @@ def test_run_blocked_when_recipient_inactive() -> None:
         client.post(f"/recipients/{recipient_id}/deactivate")
         run = client.post(f"/payout-workflows/{workflow_id}/run")
         assert run.status_code == 409
-        assert run.json()["code"] == "PAYOUT_WORKFLOW_GUARD"
+        assert run.json()["code"] == "RECIPIENT_INACTIVE"
     finally:
         os.unlink(db_path)
 

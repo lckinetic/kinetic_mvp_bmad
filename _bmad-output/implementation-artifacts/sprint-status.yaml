@@ -24,7 +24,7 @@
 #   - done: Retrospective has been completed
 
 generated: "2026-04-12T12:00:00Z"
-last_updated: "2026-06-08T21:00:00Z"
+last_updated: "2026-06-08T22:00:00Z"
 project: kinetic-mvp-bmad
 project_key: NOKEY
 tracking_system: file-system
@@ -139,14 +139,14 @@ development_status:
   14-7-dashboard-recent-activity-widget: done
   epic-14-retrospective: optional
 
-  epic-15: backlog
-  15-1-alert-domain-model: backlog
-  15-2-alerts-on-workflow-failure: backlog
-  15-3-alerts-on-transfer-failure: backlog
-  15-4-alerts-api: backlog
-  15-5-dashboard-alerts-widget: backlog
-  15-6-error-state-ux-patterns: backlog
-  15-7-exception-resolution-flow: backlog
+  epic-15: done
+  15-1-alert-domain-model: done
+  15-2-alerts-on-workflow-failure: done
+  15-3-alerts-on-transfer-failure: done
+  15-4-alerts-api: done
+  15-5-dashboard-alerts-widget: done
+  15-6-error-state-ux-patterns: done
+  15-7-exception-resolution-flow: done
   epic-15-retrospective: optional
 
   epic-16: backlog

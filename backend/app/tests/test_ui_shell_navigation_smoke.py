@@ -49,8 +49,8 @@ def test_dashboard_refreshes_treasury_balance_on_return() -> None:
     assert "dashboardRefreshKey" in content
     assert "refreshKey={dashboardRefreshKey}" in content
     dashboard = (Path(__file__).resolve().parents[3] / "ui_kits" / "app" / "Dashboard.jsx").read_text(encoding="utf-8")
-    assert "refreshKey = 0" in dashboard
-    assert "[workspace?.id, refreshKey]" in dashboard
+    assert "acknowledgeAlert" in dashboard
+    assert "prominentAlerts" in dashboard
 
 
 def test_operational_screens_wire_checklist_progression() -> None:

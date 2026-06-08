@@ -67,6 +67,7 @@ function WorkflowsShell({ onNavigate, onChecklistStep }) {
   const [form, setForm] = React.useState(emptyWorkflowForm());
   const [formError, setFormError] = React.useState('');
   const [runResult, setRunResult] = React.useState(null);
+  const [recoveryRow, setRecoveryRow] = React.useState(null);
 
   const loadWorkflows = React.useCallback(async () => {
     setError('');
@@ -165,6 +166,7 @@ function WorkflowsShell({ onNavigate, onChecklistStep }) {
     setBusy(true);
     setError('');
     setRunResult(null);
+    setRecoveryRow(null);
     try {
       const result = await payoutWorkflowRequest(`/${row.id}/run`, { method: 'POST', body: '{}' });
       setRunResult(result);
@@ -173,6 +175,11 @@ function WorkflowsShell({ onNavigate, onChecklistStep }) {
     } catch (err) {
       if (err.code === 'INSUFFICIENT_BALANCE') {
         setError(`${err.message} Fund treasury before retrying.`);
+      } else if (err.code === 'PAYOUT_WORKFLOW_DISABLED') {
+        setRecoveryRow(row);
+        setError(`${err.message} Enable the workflow before running again.`);
+      } else if (err.code === 'RECIPIENT_INACTIVE') {
+        setError(`${err.message} Reactivate or update the recipient before retrying.`);
       } else {
         setError(err.message || 'Payout run failed.');
       }
@@ -204,6 +211,16 @@ function WorkflowsShell({ onNavigate, onChecklistStep }) {
           {error.toLowerCase().includes('fund treasury') && (
             <div style={{ marginTop: 8 }}>
               <KButton size="sm" onClick={() => onNavigate('treasury')}>Fund treasury</KButton>
+            </div>
+          )}
+          {error.toLowerCase().includes('enable the workflow') && recoveryRow && (
+            <div style={{ marginTop: 8 }}>
+              <KButton size="sm" onClick={() => handleToggle(recoveryRow)}>Enable workflow</KButton>
+            </div>
+          )}
+          {(error.toLowerCase().includes('recipient') && error.toLowerCase().includes('inactive')) && (
+            <div style={{ marginTop: 8 }}>
+              <KButton size="sm" onClick={() => onNavigate('recipients')}>Edit recipient</KButton>
             </div>
           )}
         </div>
@@ -259,7 +276,7 @@ function WorkflowsShell({ onNavigate, onChecklistStep }) {
               <span style={{ color: KColors.fg3, fontSize: 12 }}>{row.schedule_label}</span>
               <span style={{ color: KColors.fg3, fontSize: 12, whiteSpace: 'nowrap' }}>{formatLastRun(row.last_run_at)}</span>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                <KButton size="sm" disabled={busy || !row.enabled} onClick={() => handleRun(row)}>Run now</KButton>
+                <KButton size="sm" disabled={busy} onClick={() => handleRun(row)}>Run now</KButton>
                 <KButton variant="secondary" size="sm" onClick={() => openEditModal(row)}>Edit</KButton>
                 <KButton variant="ghost" size="sm" disabled={busy} onClick={() => handleToggle(row)}>{row.enabled ? 'Disable' : 'Enable'}</KButton>
               </div>

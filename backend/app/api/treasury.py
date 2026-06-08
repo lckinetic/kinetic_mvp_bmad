@@ -20,6 +20,7 @@ from app.services.treasury_service import (
     list_transfers,
     serialize_transfer,
     simulate_deposit,
+    simulate_failed_outbound_transfer,
 )
 from app.services.workspace_service import WorkspaceNotFoundError, get_current_workspace
 
@@ -36,6 +37,11 @@ class BalanceCheckRequest(BaseModel):
 
 class SimulateDepositRequest(BaseModel):
     amount: float = Field(default=1000.0, gt=0)
+    counterparty_label: str | None = Field(default=None, max_length=120)
+
+
+class SimulateFailedPayoutRequest(BaseModel):
+    amount: float = Field(default=50.0, gt=0)
     counterparty_label: str | None = Field(default=None, max_length=120)
 
 
@@ -61,6 +67,10 @@ def create_treasury_route(
             detail={"code": "TREASURY_ALREADY_EXISTS", "message": str(exc)},
         ) from exc
     except TreasuryProviderNotConfiguredError as exc:
+        workspace = get_current_workspace(db)
+        from app.services.alert_service import create_provider_unavailable_alert
+
+        create_provider_unavailable_alert(db, workspace_id=workspace.id, message=str(exc))
         raise HTTPException(
             status_code=501,
             detail={"code": "TREASURY_PROVIDER_NOT_CONFIGURED", "message": str(exc)},
@@ -156,6 +166,41 @@ def simulate_deposit_route(
             settings=settings,
             amount=body.amount,
             counterparty_label=body.counterparty_label or "Demo deposit",
+        )
+    except WorkspaceNotFoundError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail={"code": "WORKSPACE_NOT_FOUND", "message": str(exc)},
+        ) from exc
+    except TreasuryNotFoundError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail={"code": "TREASURY_NOT_FOUND", "message": str(exc)},
+        ) from exc
+    except MockOnlyOperationError as exc:
+        raise HTTPException(
+            status_code=403,
+            detail={"code": "MOCK_ONLY", "message": str(exc)},
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail={"code": "TREASURY_INVALID", "message": str(exc)},
+        ) from exc
+
+
+@router.post("/transfers/simulate-failed-payout", response_model=dict)
+def simulate_failed_payout_route(
+    body: SimulateFailedPayoutRequest,
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+):
+    try:
+        return simulate_failed_outbound_transfer(
+            db,
+            settings=settings,
+            amount=body.amount,
+            counterparty_label=body.counterparty_label or "Demo failed payout",
         )
     except WorkspaceNotFoundError as exc:
         raise HTTPException(

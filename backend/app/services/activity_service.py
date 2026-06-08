@@ -10,6 +10,7 @@ from app.services.workspace_service import get_current_workspace
 ACTIVITY_EVENT_TYPES = {
     "payout.completed": "Payout completed",
     "payout.failed": "Payout failed",
+    "payout.blocked": "Payout blocked",
     "treasury.deposit": "Treasury funded",
     "treasury.payout": "Treasury payout sent",
     "workflow.run_completed": "Workflow run completed",
@@ -78,6 +79,36 @@ def _upsert_activity(
     return row
 
 
+def ingest_blocked_payout_activity(
+    db: Session,
+    *,
+    workspace_id: int,
+    workflow_id: int,
+    block_reason: str,
+    title: str,
+    summary: str,
+    recipient_id: int | None = None,
+) -> ActivityEvent:
+    links = {
+        "payout_workflow_id": workflow_id,
+        "nav": {"workflows": "workflows", "treasury": "treasury", "recipients": "recipients", "activity": "activity"},
+    }
+    if recipient_id is not None:
+        links["recipient_id"] = recipient_id
+    return _upsert_activity(
+        db,
+        workspace_id=workspace_id,
+        event_type="payout.blocked",
+        status="blocked",
+        title=title,
+        summary=summary,
+        source_kind="payout_workflow",
+        source_id=workflow_id,
+        links=links,
+        payload={"block_reason": block_reason},
+    )
+
+
 def ingest_workflow_run_activity(db: Session, *, run: WorkflowRun, workspace_id: int) -> ActivityEvent | None:
     if run.template_name != "contractor_payout":
         event_type = "workflow.run_completed" if run.status == "completed" else "workflow.run_failed"
@@ -123,7 +154,7 @@ def ingest_workflow_run_activity(db: Session, *, run: WorkflowRun, workspace_id:
     if recipient_id:
         links["recipient_id"] = recipient_id
 
-    return _upsert_activity(
+    row = _upsert_activity(
         db,
         workspace_id=workspace_id,
         event_type=event_type,
@@ -140,19 +171,30 @@ def ingest_workflow_run_activity(db: Session, *, run: WorkflowRun, workspace_id:
         },
     )
 
+    from app.services.alert_service import create_alert_from_failed_run
+
+    if run.status == "failed":
+        create_alert_from_failed_run(db, run=run, workspace_id=workspace_id)
+    return row
+
 
 def ingest_transfer_activity(db: Session, *, transfer: TreasuryTransfer) -> ActivityEvent:
     if transfer.direction == "inbound":
         event_type = "treasury.deposit"
         title = "Treasury funded"
         summary = f"Received {transfer.amount} {transfer.asset} into treasury."
+    elif transfer.status == "failed":
+        event_type = "payout.failed"
+        counterparty = transfer.counterparty_label or "recipient"
+        title = f"Payout to {counterparty} failed"
+        summary = transfer.error_message or f"Treasury transfer of {transfer.amount} {transfer.asset} failed."
     else:
         event_type = "treasury.payout"
         title = "Treasury payout sent"
         counterparty = transfer.counterparty_label or "recipient"
         summary = f"Sent {transfer.amount} {transfer.asset} to {counterparty}."
 
-    return _upsert_activity(
+    event = _upsert_activity(
         db,
         workspace_id=transfer.workspace_id,
         event_type=event_type,
@@ -173,6 +215,11 @@ def ingest_transfer_activity(db: Session, *, transfer: TreasuryTransfer) -> Acti
             "transaction_hash": transfer.transaction_hash,
         },
     )
+
+    from app.services.alert_service import create_alert_from_failed_transfer
+
+    create_alert_from_failed_transfer(db, transfer=transfer)
+    return event
 
 
 def list_activity_events(

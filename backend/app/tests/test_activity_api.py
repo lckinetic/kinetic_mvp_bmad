@@ -96,6 +96,7 @@ def test_list_activity_event_types() -> None:
         assert res.status_code == 200
         labels = {row["id"]: row["label"] for row in res.json()["items"]}
         assert labels["payout.completed"] == "Payout completed"
+        assert labels["payout.blocked"] == "Payout blocked"
         assert labels["workflow.run_completed"] == "Workflow run completed"
     finally:
         os.unlink(db_path)

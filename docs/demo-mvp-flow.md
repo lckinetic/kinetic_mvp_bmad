@@ -25,7 +25,9 @@ This is the canonical walkthrough for product demos after Phase 2 Sprint 1 (hero
 11. Navigate to **Activity Centre** — confirm deposit, payout, and workflow events appear in the timeline.
 12. Open an event detail drawer and use cross-links to treasury or workflows.
 13. Return to **Dashboard** and confirm recent activity shows the latest events.
-14. Open **Settings** → **Advanced** to reach legacy MVP tools if needed.
+14. Trigger a blocked payout (run workflow with insufficient balance) and confirm an alert appears on the Dashboard with **Fund treasury** recovery guidance.
+15. Acknowledge the alert and confirm it is de-emphasized; open **Activity Centre** and confirm a **Payout blocked** event appears for the failed run attempt.
+16. Open **Settings** → **Advanced** to reach legacy MVP tools if needed.
 
 ## Legacy demo path (regression)
 

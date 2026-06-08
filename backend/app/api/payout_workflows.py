@@ -11,6 +11,7 @@ from app.services.payout_workflow_service import (
     PayoutWorkflowGuardrailError,
     PayoutWorkflowNotFoundError,
     PayoutWorkflowValidationError,
+    RecipientInactiveError,
     create_payout_workflow,
     get_payout_workflow,
     list_payout_workflows,
@@ -20,7 +21,7 @@ from app.services.payout_workflow_service import (
 )
 from app.services.recipient_service import RecipientNotFoundError
 from app.services.treasury_service import InsufficientBalanceError, TreasuryNotFoundError
-from app.services.workspace_service import WorkspaceNotFoundError
+from app.services.workspace_service import WorkspaceNotFoundError, get_current_workspace
 
 router = APIRouter(prefix="/payout-workflows", tags=["payout-workflows"])
 
@@ -147,7 +148,44 @@ def run_payout_workflow_route(
     except PayoutWorkflowNotFoundError as exc:
         raise HTTPException(status_code=404, detail={"code": "PAYOUT_WORKFLOW_NOT_FOUND", "message": str(exc)}) from exc
     except PayoutWorkflowDisabledError as exc:
+        workspace = get_current_workspace(db)
+        from app.services.activity_service import ingest_blocked_payout_activity
+        from app.services.alert_service import create_workflow_disabled_alert
+
+        create_workflow_disabled_alert(db, workspace_id=workspace.id, workflow_id=workflow_id)
+        ingest_blocked_payout_activity(
+            db,
+            workspace_id=workspace.id,
+            workflow_id=workflow_id,
+            block_reason="workflow_disabled",
+            title="Payout workflow is paused",
+            summary=str(exc),
+        )
         raise HTTPException(status_code=409, detail={"code": "PAYOUT_WORKFLOW_DISABLED", "message": str(exc)}) from exc
+    except RecipientInactiveError as exc:
+        workspace = get_current_workspace(db)
+        from app.services.activity_service import ingest_blocked_payout_activity
+        from app.services.alert_service import create_recipient_invalid_alert
+
+        create_recipient_invalid_alert(
+            db,
+            workspace_id=workspace.id,
+            workflow_id=workflow_id,
+            recipient_id=exc.recipient_id,
+        )
+        ingest_blocked_payout_activity(
+            db,
+            workspace_id=workspace.id,
+            workflow_id=workflow_id,
+            block_reason="recipient_inactive",
+            title="Payout blocked — recipient inactive",
+            summary=str(exc),
+            recipient_id=exc.recipient_id,
+        )
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "RECIPIENT_INACTIVE", "message": str(exc), "details": {"recipient_id": exc.recipient_id}},
+        ) from exc
     except PayoutWorkflowGuardrailError as exc:
         raise HTTPException(status_code=409, detail={"code": "PAYOUT_WORKFLOW_GUARD", "message": str(exc)}) from exc
     except RecipientNotFoundError as exc:
@@ -155,6 +193,26 @@ def run_payout_workflow_route(
     except TreasuryNotFoundError as exc:
         raise HTTPException(status_code=404, detail={"code": "TREASURY_NOT_FOUND", "message": str(exc)}) from exc
     except InsufficientBalanceError as exc:
+        workspace = get_current_workspace(db)
+        from app.services.activity_service import ingest_blocked_payout_activity
+        from app.services.alert_service import create_insufficient_balance_alert
+
+        create_insufficient_balance_alert(
+            db,
+            workspace_id=workspace.id,
+            workflow_id=workflow_id,
+            balance=exc.balance,
+            required=exc.required,
+            shortfall=exc.shortfall,
+        )
+        ingest_blocked_payout_activity(
+            db,
+            workspace_id=workspace.id,
+            workflow_id=workflow_id,
+            block_reason="insufficient_balance",
+            title="Payout blocked — insufficient treasury balance",
+            summary=str(exc),
+        )
         raise HTTPException(
             status_code=409,
             detail={

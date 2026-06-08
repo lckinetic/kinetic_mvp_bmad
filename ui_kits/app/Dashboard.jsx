@@ -8,6 +8,8 @@ function Dashboard({ workspace, checklist, onNavigate, refreshKey = 0 }) {
   const [workflowLoading, setWorkflowLoading] = React.useState(true);
   const [recentActivity, setRecentActivity] = React.useState([]);
   const [activityLoading, setActivityLoading] = React.useState(true);
+  const [alerts, setAlerts] = React.useState([]);
+  const [alertsLoading, setAlertsLoading] = React.useState(true);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -74,6 +76,38 @@ function Dashboard({ workspace, checklist, onNavigate, refreshKey = 0 }) {
     return () => { cancelled = true; };
   }, [workspace?.id, refreshKey]);
 
+  React.useEffect(() => {
+    let cancelled = false;
+    async function loadAlerts() {
+      setAlertsLoading(true);
+      try {
+        const res = await fetch(`${window.KINETIC_API_BASE || ''}/alerts?limit=10`);
+        const body = await res.json();
+        if (!cancelled && res.ok) setAlerts(body.items || []);
+      } catch {
+        if (!cancelled) setAlerts([]);
+      } finally {
+        if (!cancelled) setAlertsLoading(false);
+      }
+    }
+    loadAlerts();
+    return () => { cancelled = true; };
+  }, [workspace?.id, refreshKey]);
+
+  async function acknowledgeAlert(alertId) {
+    try {
+      await fetch(`${window.KINETIC_API_BASE || ''}/alerts/${alertId}/acknowledge`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      const res = await fetch(`${window.KINETIC_API_BASE || ''}/alerts?limit=10`);
+      const body = await res.json();
+      if (res.ok) setAlerts(body.items || []);
+    } catch {
+      // Keep existing alerts visible if acknowledge fails.
+    }
+  }
+
+  const prominentAlerts = alerts.filter(row => row.is_prominent);
+  const acknowledgedAlerts = alerts.filter(row => row.status === 'acknowledged');
+
   const balanceLabel = treasuryLoading
     ? '…'
     : treasuryBalance === null
@@ -98,6 +132,22 @@ function Dashboard({ workspace, checklist, onNavigate, refreshKey = 0 }) {
 
       <SetupChecklist checklist={checklist} onNavigate={onNavigate} />
 
+      {prominentAlerts.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {prominentAlerts.map(alert => (
+            <div key={alert.id} style={{ padding: '12px 14px', borderRadius: 8, background: KColors.warningBg, border: '1px solid rgba(217,119,6,0.35)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: KColors.warning }}>{alert.title}</div>
+              <div style={{ fontSize: 12, color: KColors.fg2, lineHeight: 1.55 }}>{alert.message}</div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <KButton size="sm" onClick={() => onNavigate(alert.nav_route || 'activity')}>{alert.recovery_label}</KButton>
+                <KButton size="sm" variant="secondary" onClick={() => onNavigate('activity')}>View activity</KButton>
+                <KButton size="sm" variant="ghost" onClick={() => acknowledgeAlert(alert.id)}>Acknowledge</KButton>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12 }}>
         <KWidgetShell title="Treasury balance" actionLabel="Open treasury" onAction={() => onNavigate('treasury')}>
           <div style={{ fontSize: 28, fontWeight: 700, color: KColors.fg1 }}>{balanceLabel}</div>
@@ -112,7 +162,25 @@ function Dashboard({ workspace, checklist, onNavigate, refreshKey = 0 }) {
           </div>
         </KWidgetShell>
         <KWidgetShell title="Alerts" actionLabel="View activity" onAction={() => onNavigate('activity')}>
-          <KEmptyState icon="bell" title="No issues" description="Operational alerts will appear here when monitoring is connected." />
+          {alertsLoading ? (
+            <div style={{ fontSize: 13, color: KColors.fg3 }}>Loading alerts…</div>
+          ) : prominentAlerts.length === 0 && acknowledgedAlerts.length === 0 ? (
+            <KEmptyState icon="bell" title="No issues" description="Operational alerts will appear here when payouts or treasury operations need attention." />
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {prominentAlerts.map(alert => (
+                <div key={alert.id} style={{ padding: '8px 10px', borderRadius: 6, background: KColors.errorBg, border: '1px solid rgba(220,38,38,0.25)' }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: KColors.error }}>{alert.title}</div>
+                  <div style={{ marginTop: 4, fontSize: 11, color: KColors.fg3 }}>{alert.recovery_label}</div>
+                </div>
+              ))}
+              {acknowledgedAlerts.slice(0, 2).map(alert => (
+                <div key={alert.id} style={{ padding: '8px 10px', borderRadius: 6, background: KColors.overlay, border: `1px solid ${KColors.border}`, opacity: 0.75 }}>
+                  <div style={{ fontSize: 12, color: KColors.fg3 }}>{alert.title} · acknowledged</div>
+                </div>
+              ))}
+            </div>
+          )}
         </KWidgetShell>
       </div>
 

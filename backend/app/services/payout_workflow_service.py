@@ -37,6 +37,12 @@ class PayoutWorkflowGuardrailError(ValueError):
     pass
 
 
+class RecipientInactiveError(ValueError):
+    def __init__(self, *, recipient_id: int):
+        self.recipient_id = recipient_id
+        super().__init__("Recipient is inactive. Update the workflow before running.")
+
+
 def _format_schedule(cadence: str, day: str | None) -> str:
     if cadence == "manual":
         return "Manual run only"
@@ -231,7 +237,7 @@ def validate_run_guardrails(db: Session, *, settings: Settings, workflow: Payout
     workspace = get_current_workspace(db)
     recipient = _get_recipient_for_workspace(db, workspace_id=workspace.id, recipient_id=workflow.recipient_id)
     if recipient.status != "active":
-        raise PayoutWorkflowGuardrailError("Recipient is inactive. Update the workflow before running.")
+        raise RecipientInactiveError(recipient_id=recipient.id)
 
     treasury_view = get_current_treasury(db, settings=settings)
     check_sufficient_balance(db, treasury_id=treasury_view["id"], amount=workflow.amount)
@@ -272,6 +278,11 @@ def run_payout_workflow(db: Session, *, settings: Settings, workflow_id: int) ->
     from app.services.activity_service import ingest_workflow_run_activity
 
     ingest_workflow_run_activity(db, run=run, workspace_id=workspace.id)
+
+    if run.status == "completed":
+        from app.services.alert_service import resolve_alerts_for_workflow
+
+        resolve_alerts_for_workflow(db, workspace_id=workspace.id, workflow_id=row.id)
 
     return {
         "workflow": serialize_payout_workflow(db, row, recipient=recipient),

@@ -205,6 +205,30 @@ class ActivityEvent(SQLModel, table=True):
     created_at: datetime = Field(default_factory=utcnow)
 
 
+class Alert(SQLModel, table=True):
+    __table_args__ = (
+        UniqueConstraint("source_kind", "source_id", "alert_type", name="uq_alert_source_type"),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    workspace_id: int = Field(foreign_key="workspace.id", index=True)
+    alert_type: str = Field(index=True)
+    severity: str = Field(default="warning", index=True)  # critical | warning | info
+    status: str = Field(default="open", index=True)  # open | acknowledged | resolved
+    title: str = Field(index=True)
+    message: str
+    recovery_action: str = Field(index=True)
+    recovery_label: str
+    source_kind: str = Field(index=True)
+    source_id: int = Field(index=True)
+    links: Dict[str, Any] = Field(sa_column=Column(JSON), default_factory=dict)
+    payload: Dict[str, Any] = Field(sa_column=Column(JSON), default_factory=dict)
+    acknowledged_at: Optional[datetime] = None
+    resolved_at: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=utcnow)
+    updated_at: datetime = Field(default_factory=utcnow)
+
+
 class AssistantProposal(SQLModel, table=True):
     __table_args__ = (
         UniqueConstraint("proposal_id", name="uq_assistant_proposal_id"),
