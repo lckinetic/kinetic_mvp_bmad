@@ -251,6 +251,7 @@ def run_payout_workflow(db: Session, *, settings: Settings, workflow_id: int) ->
         template_name=row.template_name,
         input_data={
             "workspace_id": workspace.id,
+            "recipient_id": recipient.id,
             "recipient_name": recipient.name,
             "recipient_address": recipient.wallet_address,
             "recipient_network": recipient.network,
@@ -267,6 +268,10 @@ def run_payout_workflow(db: Session, *, settings: Settings, workflow_id: int) ->
     db.add(row)
     db.commit()
     db.refresh(row)
+
+    from app.services.activity_service import ingest_workflow_run_activity
+
+    ingest_workflow_run_activity(db, run=run, workspace_id=workspace.id)
 
     return {
         "workflow": serialize_payout_workflow(db, row, recipient=recipient),

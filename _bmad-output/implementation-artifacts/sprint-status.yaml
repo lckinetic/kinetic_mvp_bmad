@@ -24,7 +24,7 @@
 #   - done: Retrospective has been completed
 
 generated: "2026-04-12T12:00:00Z"
-last_updated: "2026-06-08T20:00:00Z"
+last_updated: "2026-06-08T21:00:00Z"
 project: kinetic-mvp-bmad
 project_key: NOKEY
 tracking_system: file-system
@@ -129,14 +129,14 @@ development_status:
   13-9-hero-demo-migration: done
   epic-13-retrospective: optional
 
-  epic-14: backlog
-  14-1-activity-event-taxonomy-and-model: backlog
-  14-2-ingest-workflow-run-events: backlog
-  14-3-ingest-transfer-events: backlog
-  14-4-activity-api-with-filters: backlog
-  14-5-activity-centre-ui: backlog
-  14-6-activity-detail-and-cross-links: backlog
-  14-7-dashboard-recent-activity-widget: backlog
+  epic-14: done
+  14-1-activity-event-taxonomy-and-model: done
+  14-2-ingest-workflow-run-events: done
+  14-3-ingest-transfer-events: done
+  14-4-activity-api-with-filters: done
+  14-5-activity-centre-ui: done
+  14-6-activity-detail-and-cross-links: done
+  14-7-dashboard-recent-activity-widget: done
   epic-14-retrospective: optional
 
   epic-15: backlog

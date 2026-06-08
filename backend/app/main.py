@@ -25,6 +25,7 @@ from app.api.workspaces import router as workspaces_router
 from app.api.treasury import router as treasury_router
 from app.api.recipients import router as recipients_router
 from app.api.payout_workflows import router as payout_workflows_router
+from app.api.activity import router as activity_router
 
 
 logger = logging.getLogger("kinetic")
@@ -82,6 +83,7 @@ def create_app() -> FastAPI:
     app.include_router(treasury_router)
     app.include_router(recipients_router)
     app.include_router(payout_workflows_router)
+    app.include_router(activity_router)
 
     return app
 

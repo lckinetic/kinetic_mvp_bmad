@@ -6,6 +6,8 @@ function Dashboard({ workspace, checklist, onNavigate, refreshKey = 0 }) {
   const [treasuryLoading, setTreasuryLoading] = React.useState(true);
   const [workflowCount, setWorkflowCount] = React.useState(null);
   const [workflowLoading, setWorkflowLoading] = React.useState(true);
+  const [recentActivity, setRecentActivity] = React.useState([]);
+  const [activityLoading, setActivityLoading] = React.useState(true);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -54,6 +56,24 @@ function Dashboard({ workspace, checklist, onNavigate, refreshKey = 0 }) {
     return () => { cancelled = true; };
   }, [workspace?.id, refreshKey]);
 
+  React.useEffect(() => {
+    let cancelled = false;
+    async function loadActivity() {
+      setActivityLoading(true);
+      try {
+        const res = await fetch(`${window.KINETIC_API_BASE || ''}/activity?limit=5`);
+        const body = await res.json();
+        if (!cancelled && res.ok) setRecentActivity(body.items || []);
+      } catch {
+        if (!cancelled) setRecentActivity([]);
+      } finally {
+        if (!cancelled) setActivityLoading(false);
+      }
+    }
+    loadActivity();
+    return () => { cancelled = true; };
+  }, [workspace?.id, refreshKey]);
+
   const balanceLabel = treasuryLoading
     ? '…'
     : treasuryBalance === null
@@ -98,7 +118,20 @@ function Dashboard({ workspace, checklist, onNavigate, refreshKey = 0 }) {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <KWidgetShell title="Recent activity" actionLabel="Activity Centre" onAction={() => onNavigate('activity')}>
-          <KEmptyState icon="activity" title="No activity yet" description="Workflow runs and treasury movements will appear here." actionLabel="Go to Activity Centre" onAction={() => onNavigate('activity')} />
+          {activityLoading ? (
+            <div style={{ fontSize: 13, color: KColors.fg3 }}>Loading activity…</div>
+          ) : recentActivity.length === 0 ? (
+            <KEmptyState icon="activity" title="No activity yet" description="Workflow runs and treasury movements will appear here." actionLabel="Go to Activity Centre" onAction={() => onNavigate('activity')} />
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {recentActivity.map(row => (
+                <div key={row.id} style={{ padding: '8px 10px', borderRadius: 6, background: KColors.raised, border: `1px solid ${KColors.border}` }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: KColors.fg1 }}>{row.title}</div>
+                  <div style={{ marginTop: 3, fontSize: 11, color: KColors.fg3 }}>{new Date(row.created_at).toLocaleString()}</div>
+                </div>
+              ))}
+            </div>
+          )}
         </KWidgetShell>
         <KWidgetShell title="Upcoming payouts" actionLabel="Workflows" onAction={() => onNavigate('workflows')}>
           <KEmptyState icon="calendar" title="Nothing scheduled" description="Scheduled contractor payouts will show here once workflows are configured." actionLabel="Create payout workflow" onAction={() => onNavigate('workflows')} />

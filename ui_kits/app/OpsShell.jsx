@@ -294,18 +294,4 @@ function WorkflowsShell({ onNavigate, onChecklistStep }) {
   );
 }
 
-function ActivityShell({ onNavigate }) {
-  return (
-    <KEmptyState
-      icon="activity"
-      title="No activity yet"
-      description="Workflow runs, treasury movements, and alerts will appear in your Activity Centre once operations begin."
-      actionLabel="Go to Dashboard"
-      onAction={() => onNavigate('dashboard')}
-      secondaryLabel="Legacy run history"
-      onSecondary={() => onNavigate('runs')}
-    />
-  );
-}
-
-Object.assign(window, { WorkflowsShell, ActivityShell });
+Object.assign(window, { WorkflowsShell });

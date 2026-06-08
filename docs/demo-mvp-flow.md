@@ -22,8 +22,10 @@ This is the canonical walkthrough for product demos after Phase 2 Sprint 1 (hero
 8. Navigate to **Recipients** → **Add recipient** (name, network, wallet address) and confirm the directory list updates.
 9. Navigate to **Workflows** → **Create payout workflow** (recipient, amount, schedule) → **Run now**.
 10. Confirm treasury balance decreases and the run completes with step-level success messaging.
-11. Navigate to **Activity Centre** — unified timeline shell (Epic 14).
-12. Open **Settings** → **Advanced** to reach legacy MVP tools if needed.
+11. Navigate to **Activity Centre** — confirm deposit, payout, and workflow events appear in the timeline.
+12. Open an event detail drawer and use cross-links to treasury or workflows.
+13. Return to **Dashboard** and confirm recent activity shows the latest events.
+14. Open **Settings** → **Advanced** to reach legacy MVP tools if needed.
 
 ## Legacy demo path (regression)
 

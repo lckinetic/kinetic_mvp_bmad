@@ -71,6 +71,11 @@ def test_operational_screens_wire_checklist_progression() -> None:
     assert "<RecipientPicker" in ai_generator
     assert "Create payout workflow" in ops_shell
     assert "onChecklistStep('firstRun')" in ops_shell
+    activity = (Path(__file__).resolve().parents[3] / "ui_kits" / "app" / "Activity.jsx").read_text(encoding="utf-8")
+    assert "ACTIVITY_API" in activity
+    assert "Event detail" in activity
+    assert "activityRequest('/event-types')" in activity
+    assert "FALLBACK_EVENT_TYPE_OPTIONS" in activity
     assert "CONTRACTOR_PAYOUT_STEP_LABELS" in ops_shell
     assert "formatLastRun" in ops_shell
     assert "Last run" in ops_shell

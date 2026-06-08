@@ -225,6 +225,10 @@ def simulate_deposit(
     db.commit()
     db.refresh(transfer)
 
+    from app.services.activity_service import ingest_transfer_activity
+
+    ingest_transfer_activity(db, transfer=transfer)
+
     return {
         "transfer": serialize_transfer(transfer),
         "treasury": get_current_treasury(db, settings=settings),
@@ -281,4 +285,8 @@ def record_outbound_transfer(
     db.add(transfer)
     db.commit()
     db.refresh(transfer)
+
+    from app.services.activity_service import ingest_transfer_activity
+
+    ingest_transfer_activity(db, transfer=transfer)
     return transfer

@@ -187,6 +187,24 @@ class PayoutWorkflowDefinition(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=utcnow)
 
 
+class ActivityEvent(SQLModel, table=True):
+    __table_args__ = (
+        UniqueConstraint("source_kind", "source_id", "event_type", name="uq_activity_source_event"),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    workspace_id: int = Field(foreign_key="workspace.id", index=True)
+    event_type: str = Field(index=True)
+    status: str = Field(default="completed", index=True)
+    title: str = Field(index=True)
+    summary: str
+    source_kind: str = Field(index=True)
+    source_id: int = Field(index=True)
+    links: Dict[str, Any] = Field(sa_column=Column(JSON), default_factory=dict)
+    payload: Dict[str, Any] = Field(sa_column=Column(JSON), default_factory=dict)
+    created_at: datetime = Field(default_factory=utcnow)
+
+
 class AssistantProposal(SQLModel, table=True):
     __table_args__ = (
         UniqueConstraint("proposal_id", name="uq_assistant_proposal_id"),
