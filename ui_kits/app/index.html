@@ -293,6 +293,7 @@ function App() {
   const [page, setPage] = React.useState(readRoute);
   const [workspace, setWorkspace] = React.useState(() => loadWorkspace());
   const [checklist, setChecklist] = React.useState(() => loadChecklist(loadWorkspace()?.id));
+  const [dashboardRefreshKey, setDashboardRefreshKey] = React.useState(0);
   const [templateOpenInRunner, setTemplateOpenInRunner] = React.useState(false);
   const [runnerTemplateName, setRunnerTemplateName] = React.useState(null);
   const [aiCapabilities, setAiCapabilities] = React.useState({ mock_mode: true, provider: "mock", model: "rule-based" });
@@ -332,7 +333,9 @@ function App() {
 
   React.useEffect(() => {
     function onHashChange() {
-      setPage(readRoute());
+      const next = readRoute();
+      setPage(next);
+      if (next === 'dashboard') setDashboardRefreshKey((k) => k + 1);
     }
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
@@ -374,13 +377,14 @@ function App() {
     setPage(next);
     setTemplateOpenInRunner(false);
     if (next === 'templates') setRunnerTemplateName(null);
+    if (next === 'dashboard') setDashboardRefreshKey((k) => k + 1);
   }
 
   const pageMeta = getPageMeta(page);
 
   function renderScreenContent() {
     if (page === 'dashboard') {
-      return <Dashboard workspace={workspace} checklist={checklist} onNavigate={navigate} />;
+      return <Dashboard workspace={workspace} checklist={checklist} onNavigate={navigate} refreshKey={dashboardRefreshKey} />;
     }
     if (page === 'treasury') {
       return <Treasury onNavigate={navigate} onChecklistStep={completeChecklistStep} />;

@@ -16,11 +16,13 @@ This is the canonical walkthrough for product demos after Phase 2 Sprint 1 (hero
 2. Click **Get started** to open the onboarding wizard.
 3. Complete onboarding: audience → preview → create workspace → **Go to Dashboard**.
 4. On **Dashboard**, review the setup checklist (treasury, recipients, workflow, activity).
-5. Navigate to **Treasury** — review the operational account shell and funding empty state.
-6. Navigate to **Recipients** — review contractor payout destination shell.
-7. Navigate to **Workflows** — placeholder for payout workflow configuration (Sprint 2+).
-8. Navigate to **Activity Centre** — unified timeline shell.
-9. Open **Settings** → **Advanced** to reach legacy MVP tools if needed.
+5. Navigate to **Treasury** → **Create treasury wallet**.
+6. Use **Simulate deposit** (mock mode) to fund the treasury, then confirm balance and transaction history update.
+7. Optionally click **Check payout readiness** to see the insufficient-balance guidance when unfunded.
+8. Navigate to **Recipients** — review contractor payout destination shell.
+9. Navigate to **Workflows** — placeholder for payout workflow configuration (Sprint 3+).
+10. Navigate to **Activity Centre** — unified timeline shell.
+11. Open **Settings** → **Advanced** to reach legacy MVP tools if needed.
 
 ## Legacy demo path (regression)
 

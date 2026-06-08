@@ -104,6 +104,51 @@ class Workspace(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=utcnow)
 
 
+class Treasury(SQLModel, table=True):
+    __table_args__ = (
+        UniqueConstraint("workspace_id", name="uq_treasury_workspace"),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    workspace_id: int = Field(foreign_key="workspace.id", index=True)
+    name: str = Field(default="Treasury", index=True)
+    asset: str = Field(default="USDC", index=True)
+    network: str = Field(default="base", index=True)
+    status: str = Field(default="active", index=True)
+    created_at: datetime = Field(default_factory=utcnow)
+    updated_at: datetime = Field(default_factory=utcnow)
+
+
+class TreasuryWallet(SQLModel, table=True):
+    __table_args__ = (
+        UniqueConstraint("treasury_id", name="uq_treasury_wallet_treasury"),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    treasury_id: int = Field(foreign_key="treasury.id", index=True)
+    provider: str = Field(default="privy", index=True)
+    provider_wallet_id: str = Field(index=True)
+    address: str = Field(index=True)
+    network: str = Field(index=True)
+    created_at: datetime = Field(default_factory=utcnow)
+
+
+class TreasuryTransfer(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    treasury_id: int = Field(foreign_key="treasury.id", index=True)
+    workspace_id: int = Field(foreign_key="workspace.id", index=True)
+    direction: str = Field(index=True)  # inbound | outbound
+    amount: float = Field(index=True)
+    asset: str = Field(default="USDC", index=True)
+    status: str = Field(default="completed", index=True)
+    counterparty_label: Optional[str] = Field(default=None, index=True)
+    reference: Optional[str] = Field(default=None, index=True)
+    transaction_hash: Optional[str] = Field(default=None, index=True)
+    error_message: Optional[str] = None
+    created_at: datetime = Field(default_factory=utcnow)
+    updated_at: datetime = Field(default_factory=utcnow)
+
+
 class AssistantProposal(SQLModel, table=True):
     __table_args__ = (
         UniqueConstraint("proposal_id", name="uq_assistant_proposal_id"),

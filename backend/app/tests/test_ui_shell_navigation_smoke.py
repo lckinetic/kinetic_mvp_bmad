@@ -44,6 +44,15 @@ def test_workspace_bootstrap_defaults_to_dashboard_when_present() -> None:
     assert "loadWorkspace() ? 'dashboard' : 'home'" in content
 
 
+def test_dashboard_refreshes_treasury_balance_on_return() -> None:
+    content = _index_html()
+    assert "dashboardRefreshKey" in content
+    assert "refreshKey={dashboardRefreshKey}" in content
+    dashboard = (Path(__file__).resolve().parents[3] / "ui_kits" / "app" / "Dashboard.jsx").read_text(encoding="utf-8")
+    assert "refreshKey = 0" in dashboard
+    assert "[workspace?.id, refreshKey]" in dashboard
+
+
 def test_operational_screens_wire_checklist_progression() -> None:
     content = _index_html()
     assert "onChecklistStep={completeChecklistStep}" in content
@@ -51,6 +60,7 @@ def test_operational_screens_wire_checklist_progression() -> None:
     recipients = (Path(__file__).resolve().parents[3] / "ui_kits" / "app" / "Recipients.jsx").read_text(encoding="utf-8")
     ops_shell = (Path(__file__).resolve().parents[3] / "ui_kits" / "app" / "OpsShell.jsx").read_text(encoding="utf-8")
     assert "onChecklistStep('treasury')" in treasury
+    assert "Copy funding address" in treasury
     assert "onChecklistStep('recipient')" in recipients
     assert "onChecklistStep('workflow')" in ops_shell
 

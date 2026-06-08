@@ -24,7 +24,7 @@
 #   - done: Retrospective has been completed
 
 generated: "2026-04-12T12:00:00Z"
-last_updated: "2026-06-07T12:00:00Z"
+last_updated: "2026-06-07T20:30:00Z"
 project: kinetic-mvp-bmad
 project_key: NOKEY
 tracking_system: file-system
@@ -97,15 +97,15 @@ development_status:
   10-6-demo-script-and-docs-alignment: done
   epic-10-retrospective: optional
 
-  epic-11: backlog
-  11-1-treasury-and-wallet-domain-models: backlog
-  11-2-privy-adapter-treasury-wallet-create: backlog
-  11-3-treasury-create-api-and-service: backlog
-  11-4-treasury-balance-read: backlog
-  11-5-funding-instructions-ui: backlog
-  11-6-transaction-history: backlog
-  11-7-treasury-screen-ui: backlog
-  11-8-insufficient-balance-error-state: backlog
+  epic-11: done
+  11-1-treasury-and-wallet-domain-models: done
+  11-2-privy-adapter-treasury-wallet-create: done
+  11-3-treasury-create-api-and-service: done
+  11-4-treasury-balance-read: done
+  11-5-funding-instructions-ui: done
+  11-6-transaction-history: done
+  11-7-treasury-screen-ui: done
+  11-8-insufficient-balance-error-state: done
   epic-11-retrospective: optional
 
   epic-12: backlog

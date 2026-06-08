@@ -1,7 +1,37 @@
-// Dashboard — operational home (Sprint 1 shell)
+// Dashboard — operational home
 
-function Dashboard({ workspace, checklist, onNavigate }) {
+function Dashboard({ workspace, checklist, onNavigate, refreshKey = 0 }) {
   const name = workspace?.name || 'Workspace';
+  const [treasuryBalance, setTreasuryBalance] = React.useState(null);
+  const [treasuryLoading, setTreasuryLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    async function loadTreasury() {
+      setTreasuryLoading(true);
+      try {
+        const res = await fetch(`${window.KINETIC_API_BASE || ''}/treasury`);
+        if (res.status === 404) {
+          if (!cancelled) setTreasuryBalance(null);
+          return;
+        }
+        const body = await res.json();
+        if (!cancelled && res.ok) setTreasuryBalance(body.balance);
+      } catch {
+        if (!cancelled) setTreasuryBalance(null);
+      } finally {
+        if (!cancelled) setTreasuryLoading(false);
+      }
+    }
+    loadTreasury();
+    return () => { cancelled = true; };
+  }, [workspace?.id, refreshKey]);
+
+  const balanceLabel = treasuryLoading
+    ? '…'
+    : treasuryBalance === null
+      ? '—'
+      : Number(treasuryBalance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   return (
     <div style={{ padding: 20, height: '100%', overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 18 }}>
@@ -23,8 +53,10 @@ function Dashboard({ workspace, checklist, onNavigate }) {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12 }}>
         <KWidgetShell title="Treasury balance" actionLabel="Open treasury" onAction={() => onNavigate('treasury')}>
-          <div style={{ fontSize: 28, fontWeight: 700, color: KColors.fg1 }}>—</div>
-          <div style={{ fontSize: 12, color: KColors.fg3 }}>USDC balance available in Sprint 2</div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: KColors.fg1 }}>{balanceLabel}</div>
+          <div style={{ fontSize: 12, color: KColors.fg3 }}>
+            {treasuryBalance === null && !treasuryLoading ? 'Create and fund treasury to see USDC balance' : 'USDC available for contractor payouts'}
+          </div>
         </KWidgetShell>
         <KWidgetShell title="Active workflows" actionLabel="Manage" onAction={() => onNavigate('workflows')}>
           <div style={{ fontSize: 28, fontWeight: 700, color: KColors.fg1 }}>0</div>
