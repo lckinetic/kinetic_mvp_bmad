@@ -170,6 +170,23 @@ class Recipient(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=utcnow)
 
 
+class PayoutWorkflowDefinition(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    workspace_id: int = Field(foreign_key="workspace.id", index=True)
+    name: str = Field(index=True)
+    template_name: str = Field(default="contractor_payout", index=True)
+    recipient_id: int = Field(foreign_key="recipient.id", index=True)
+    amount: float = Field(index=True)
+    asset: str = Field(default="USDC", index=True)
+    schedule_cadence: str = Field(default="manual", index=True)  # manual | weekly | monthly
+    schedule_day: Optional[str] = Field(default=None, index=True)
+    enabled: bool = Field(default=True, index=True)
+    last_run_id: Optional[int] = Field(default=None, index=True)
+    last_run_at: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=utcnow)
+    updated_at: datetime = Field(default_factory=utcnow)
+
+
 class AssistantProposal(SQLModel, table=True):
     __table_args__ = (
         UniqueConstraint("proposal_id", name="uq_assistant_proposal_id"),

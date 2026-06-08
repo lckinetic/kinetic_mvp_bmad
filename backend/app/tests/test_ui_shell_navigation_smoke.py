@@ -69,7 +69,13 @@ def test_operational_screens_wire_checklist_progression() -> None:
     assert "resolveRecipientValue" in picker
     assert "<RecipientPicker" in ops_shell
     assert "<RecipientPicker" in ai_generator
-    assert "onChecklistStep('workflow')" in ops_shell
+    assert "Create payout workflow" in ops_shell
+    assert "onChecklistStep('firstRun')" in ops_shell
+    assert "CONTRACTOR_PAYOUT_STEP_LABELS" in ops_shell
+    assert "formatLastRun" in ops_shell
+    assert "Last run" in ops_shell
+    workflow_runner = (Path(__file__).resolve().parents[3] / "ui_kits" / "app" / "WorkflowRunner.jsx").read_text(encoding="utf-8")
+    assert "name: 'contractor_payout'" in workflow_runner
     assert "recipientsRequest('/networks')" in recipients
 
 

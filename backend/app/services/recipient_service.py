@@ -246,6 +246,6 @@ def deactivate_recipient(db: Session, *, recipient_id: int) -> dict[str, Any]:
 
 
 def recipient_has_active_workflow_links(db: Session, *, recipient_id: int) -> bool:
-    """Placeholder until WorkflowDefinition links recipients in Epic 13."""
-    _ = (db, recipient_id)
-    return False
+    from app.services.payout_workflow_service import recipient_has_active_workflow_links as _has_links
+
+    return _has_links(db, recipient_id=recipient_id)

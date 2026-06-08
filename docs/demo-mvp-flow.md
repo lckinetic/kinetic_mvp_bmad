@@ -20,9 +20,10 @@ This is the canonical walkthrough for product demos after Phase 2 Sprint 1 (hero
 6. Use **Simulate deposit** (mock mode) to fund the treasury, then confirm balance and transaction history update.
 7. Optionally click **Check payout readiness** to see the insufficient-balance guidance when unfunded.
 8. Navigate to **Recipients** → **Add recipient** (name, network, wallet address) and confirm the directory list updates.
-9. Navigate to **Workflows** — placeholder for payout workflow configuration (Sprint 4 / Epic 13).
-10. Navigate to **Activity Centre** — unified timeline shell.
-11. Open **Settings** → **Advanced** to reach legacy MVP tools if needed.
+9. Navigate to **Workflows** → **Create payout workflow** (recipient, amount, schedule) → **Run now**.
+10. Confirm treasury balance decreases and the run completes with step-level success messaging.
+11. Navigate to **Activity Centre** — unified timeline shell (Epic 14).
+12. Open **Settings** → **Advanced** to reach legacy MVP tools if needed.
 
 ## Legacy demo path (regression)
 

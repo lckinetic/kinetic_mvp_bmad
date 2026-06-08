@@ -4,6 +4,8 @@ function Dashboard({ workspace, checklist, onNavigate, refreshKey = 0 }) {
   const name = workspace?.name || 'Workspace';
   const [treasuryBalance, setTreasuryBalance] = React.useState(null);
   const [treasuryLoading, setTreasuryLoading] = React.useState(true);
+  const [workflowCount, setWorkflowCount] = React.useState(null);
+  const [workflowLoading, setWorkflowLoading] = React.useState(true);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -24,6 +26,31 @@ function Dashboard({ workspace, checklist, onNavigate, refreshKey = 0 }) {
       }
     }
     loadTreasury();
+    return () => { cancelled = true; };
+  }, [workspace?.id, refreshKey]);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    async function loadWorkflows() {
+      setWorkflowLoading(true);
+      try {
+        const res = await fetch(`${window.KINETIC_API_BASE || ''}/payout-workflows`);
+        if (res.status === 404) {
+          if (!cancelled) setWorkflowCount(0);
+          return;
+        }
+        const body = await res.json();
+        if (!cancelled && res.ok) {
+          const enabled = (body.items || []).filter(row => row.enabled).length;
+          setWorkflowCount(enabled);
+        }
+      } catch {
+        if (!cancelled) setWorkflowCount(null);
+      } finally {
+        if (!cancelled) setWorkflowLoading(false);
+      }
+    }
+    loadWorkflows();
     return () => { cancelled = true; };
   }, [workspace?.id, refreshKey]);
 
@@ -59,8 +86,10 @@ function Dashboard({ workspace, checklist, onNavigate, refreshKey = 0 }) {
           </div>
         </KWidgetShell>
         <KWidgetShell title="Active workflows" actionLabel="Manage" onAction={() => onNavigate('workflows')}>
-          <div style={{ fontSize: 28, fontWeight: 700, color: KColors.fg1 }}>0</div>
-          <div style={{ fontSize: 12, color: KColors.fg3 }}>No payout workflows configured yet</div>
+          <div style={{ fontSize: 28, fontWeight: 700, color: KColors.fg1 }}>{workflowCount === null ? '—' : workflowCount}</div>
+          <div style={{ fontSize: 12, color: KColors.fg3 }}>
+            {workflowCount === null && !workflowLoading ? 'Create a payout workflow to automate contractor payments' : 'Enabled contractor payout workflows'}
+          </div>
         </KWidgetShell>
         <KWidgetShell title="Alerts" actionLabel="View activity" onAction={() => onNavigate('activity')}>
           <KEmptyState icon="bell" title="No issues" description="Operational alerts will appear here when monitoring is connected." />

@@ -87,15 +87,21 @@ const KNOWN_ROUTES = new Set([...PRIMARY_NAV.map(r => r.id), ...Object.keys(ROUT
 
 const MOCK_TEMPLATES = [
   {
+    id: 'contractor_payout',
+    name: 'Contractor Payout (Hero)',
+    category: 'Payout',
+    description: 'Treasury balance check → stablecoin payout → complete. Primary hero demo workflow.',
+  },
+  {
     id: 'managed_treasury',
-    name: 'Managed Crypto Treasury',
-    category: 'Treasury',
+    name: 'Managed Crypto Treasury (Legacy)',
+    category: 'Legacy demos',
     description: 'Wallet -> trade -> withdraw path for operator demos.',
   },
   {
     id: 'treasury_demo',
-    name: 'Treasury Rebalance (Demo)',
-    category: 'Treasury',
+    name: 'Treasury Rebalance (Legacy)',
+    category: 'Legacy demos',
     description: 'Onramp and offramp lifecycle with deterministic states.',
   },
 ];

@@ -2,6 +2,25 @@
 
 const TEMPLATES = [
   {
+    name: 'contractor_payout',
+    display_name: 'Contractor Payout (Hero)',
+    version: '1.0',
+    category: 'payout',
+    description: 'Treasury balance check → stablecoin payout → complete.',
+    business_summary: 'Pay a contractor from treasury after confirming sufficient stablecoin balance.',
+    business_steps: [
+      'Checking treasury balance',
+      'Sending payout to contractor',
+      'Completing payout run',
+    ],
+    step_outline: ['balance.check', 'transfer.payout', 'payout.complete'],
+    step_labels: {
+      'balance.check': 'Checking treasury balance',
+      'transfer.payout': 'Sending payout to contractor',
+      'payout.complete': 'Completing payout run',
+    },
+  },
+  {
     name: 'treasury_demo',
     display_name: 'Treasury Rebalance (Demo)',
     version: '1.0',

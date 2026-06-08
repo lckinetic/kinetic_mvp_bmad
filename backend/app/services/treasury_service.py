@@ -246,3 +246,39 @@ def serialize_transfer(row: TreasuryTransfer) -> dict[str, Any]:
         "created_at": row.created_at.isoformat(),
         "updated_at": row.updated_at.isoformat(),
     }
+
+
+def record_outbound_transfer(
+    db: Session,
+    *,
+    treasury_id: int,
+    workspace_id: int,
+    amount: float,
+    asset: str,
+    counterparty_label: str,
+    reference: str,
+    recipient_address: str,
+    recipient_network: str,
+) -> TreasuryTransfer:
+    if amount <= 0:
+        raise ValueError("Transfer amount must be greater than zero.")
+
+    check_sufficient_balance(db, treasury_id=treasury_id, amount=amount)
+
+    fp = f"{reference}_{treasury_id}_{int(utcnow().timestamp())}"
+    tx_hash = hashlib.sha256(f"{fp}|{recipient_address}|{recipient_network}".encode("utf-8")).hexdigest()
+    transfer = TreasuryTransfer(
+        treasury_id=treasury_id,
+        workspace_id=workspace_id,
+        direction="outbound",
+        amount=round(amount, 2),
+        asset=asset,
+        status="completed",
+        counterparty_label=counterparty_label,
+        reference=reference,
+        transaction_hash=f"0x{tx_hash[:40]}",
+    )
+    db.add(transfer)
+    db.commit()
+    db.refresh(transfer)
+    return transfer
