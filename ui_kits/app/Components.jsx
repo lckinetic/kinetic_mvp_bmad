@@ -92,7 +92,7 @@ function KInput({ label, hint, error, type = 'text', value, onChange, placeholde
 }
 
 // ── Select ────────────────────────────────────────────
-function KSelect({ label, hint, options, value, onChange }) {
+function KSelect({ label, hint, options, value, onChange, disabled = false }) {
   const [focused, setFocused] = React.useState(false);
   const selectId = React.useId();
   return (
@@ -102,12 +102,14 @@ function KSelect({ label, hint, options, value, onChange }) {
         id={selectId}
         value={value} onChange={e => onChange && onChange(e.target.value)}
         onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
+        disabled={disabled}
         style={{
           fontFamily: 'inherit', fontSize: 14, padding: '8px 12px',
           background: KColors.sunken, color: KColors.fg1,
           border: `1px solid ${focused ? KColors.primary : KColors.borderStrong}`,
           borderRadius: 4, outline: 'none', width: '100%', boxSizing: 'border-box',
-          cursor: 'pointer',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          opacity: disabled ? 0.55 : 1,
         }}
       >
         {options.map(o => <option key={o.value ?? o} value={o.value ?? o}>{o.label ?? o}</option>)}

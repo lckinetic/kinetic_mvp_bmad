@@ -62,7 +62,15 @@ def test_operational_screens_wire_checklist_progression() -> None:
     assert "onChecklistStep('treasury')" in treasury
     assert "Copy funding address" in treasury
     assert "onChecklistStep('recipient')" in recipients
+    assert "Save recipient" in recipients
+    picker = (Path(__file__).resolve().parents[3] / "ui_kits" / "app" / "RecipientPicker.jsx").read_text(encoding="utf-8")
+    ai_generator = (Path(__file__).resolve().parents[3] / "ui_kits" / "app" / "AIGenerator.jsx").read_text(encoding="utf-8")
+    assert "RecipientPicker" in picker
+    assert "resolveRecipientValue" in picker
+    assert "<RecipientPicker" in ops_shell
+    assert "<RecipientPicker" in ai_generator
     assert "onChecklistStep('workflow')" in ops_shell
+    assert "recipientsRequest('/networks')" in recipients
 
 
 def test_home_use_cases_align_with_treasury_payout_hero() -> None:

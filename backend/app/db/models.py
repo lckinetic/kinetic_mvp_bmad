@@ -149,6 +149,27 @@ class TreasuryTransfer(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=utcnow)
 
 
+class Recipient(SQLModel, table=True):
+    __table_args__ = (
+        UniqueConstraint(
+            "workspace_id",
+            "wallet_address",
+            "network",
+            name="uq_recipient_workspace_address_network",
+        ),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    workspace_id: int = Field(foreign_key="workspace.id", index=True)
+    name: str = Field(index=True)
+    wallet_address: str = Field(index=True)
+    network: str = Field(index=True)
+    notes: Optional[str] = None
+    status: str = Field(default="active", index=True)  # active | inactive
+    created_at: datetime = Field(default_factory=utcnow)
+    updated_at: datetime = Field(default_factory=utcnow)
+
+
 class AssistantProposal(SQLModel, table=True):
     __table_args__ = (
         UniqueConstraint("proposal_id", name="uq_assistant_proposal_id"),

@@ -24,7 +24,7 @@
 #   - done: Retrospective has been completed
 
 generated: "2026-04-12T12:00:00Z"
-last_updated: "2026-06-07T20:30:00Z"
+last_updated: "2026-06-07T21:00:00Z"
 project: kinetic-mvp-bmad
 project_key: NOKEY
 tracking_system: file-system
@@ -108,13 +108,13 @@ development_status:
   11-8-insufficient-balance-error-state: done
   epic-11-retrospective: optional
 
-  epic-12: backlog
-  12-1-recipient-domain-model-and-validation: backlog
-  12-2-recipient-api-crud: backlog
-  12-3-recipients-list-ui: backlog
-  12-4-add-edit-recipient-flows: backlog
-  12-5-delete-deactivate-recipient: backlog
-  12-6-recipient-picker-component: backlog
+  epic-12: done
+  12-1-recipient-domain-model-and-validation: done
+  12-2-recipient-api-crud: done
+  12-3-recipients-list-ui: done
+  12-4-add-edit-recipient-flows: done
+  12-5-delete-deactivate-recipient: done
+  12-6-recipient-picker-component: done
   epic-12-retrospective: optional
 
   epic-13: backlog

@@ -1,6 +1,7 @@
 // Kinetic — AI Workflow Generator Screen
 
 const EXAMPLE_PROMPTS = [
+  'Pay my contractor roster every Friday in USDC',
   'Buy BTC and withdraw to wallet',
   'Create a wallet for me',
   'Fund wallet with USDC',
@@ -84,6 +85,7 @@ function AIGenerator() {
   const [runId, setRunId] = React.useState(() => Math.random().toString(36).slice(2,10));
   const [modeInfo, setModeInfo] = React.useState({ mock_mode: true, provider: 'mock', model: 'rule-based' });
   const [apiError, setApiError] = React.useState('');
+  const [payoutRecipient, setPayoutRecipient] = React.useState(null);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -226,6 +228,16 @@ function AIGenerator() {
               ))}
             </div>
           </div>
+        </div>
+
+        <div>
+          <KSectionLabel>Payout recipient (optional)</KSectionLabel>
+          <RecipientPicker
+            value={payoutRecipient}
+            onChange={setPayoutRecipient}
+            hint="Attach a contractor from your directory for payout-oriented drafts"
+            disabled={genState === 'generating'}
+          />
         </div>
 
         <div style={{ display: 'flex', gap: 8 }}>
