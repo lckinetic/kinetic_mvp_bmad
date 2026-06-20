@@ -158,3 +158,17 @@ development_status:
   16-6-ai-assistant-hero-context-and-examples: done
   16-7-live-openai-path-and-error-handling: done
   epic-16-retrospective: optional
+
+  epic-17: done
+  17-1-privy-wallet-labeling: done
+  17-2-wallet-source-selector-ui-only: done
+  17-3-funding-path-narrative: done
+  17-4-meaningful-deposit-counterparty: done
+  17-5-refresh-balance-feedback: done
+  17-6-operational-typography: done
+  17-7-copy-icon-actions: done
+  17-8-recipient-payout-defaults: done
+  17-9-expanded-recipients-table: done
+  17-10-workflow-prefill-from-recipient: done
+  17-11-dashboard-upcoming-scheduled-payouts: done
+  epic-17-retrospective: optional

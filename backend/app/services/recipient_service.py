@@ -16,6 +16,9 @@ SUPPORTED_NETWORKS: dict[str, str] = {
     "polygon": "Polygon",
 }
 
+SUPPORTED_PAYOUT_CADENCES = {"manual", "weekly", "monthly"}
+WEEKLY_DAYS = {"monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"}
+
 
 class RecipientNotFoundError(LookupError):
     pass
@@ -80,7 +83,63 @@ def validate_recipient_fields(
     }
 
 
+def _format_default_schedule(cadence: str | None, day: str | None) -> str | None:
+    if not cadence or cadence == "manual":
+        return "Manual / per workflow"
+    if cadence == "weekly" and day:
+        return f"Every {day.capitalize()}"
+    if cadence == "monthly" and day:
+        return f"Monthly on day {day}"
+    return cadence.capitalize()
+
+
+def _validate_payout_defaults(
+    *,
+    default_payout_asset: str | None = None,
+    default_payout_amount: float | None = None,
+    default_schedule_cadence: str | None = None,
+    default_schedule_day: str | None = None,
+) -> dict[str, str | float | None]:
+    asset: str | None = None
+    amount: float | None = None
+    cadence: str | None = None
+    day: str | None = None
+
+    if default_payout_amount is not None:
+        amount_value = float(default_payout_amount)
+        if amount_value <= 0:
+            raise RecipientValidationError("Default payout amount must be greater than zero.")
+        amount = round(amount_value, 2)
+        asset = (default_payout_asset or "USDC").strip().upper()
+        if asset != "USDC":
+            raise RecipientValidationError("Only USDC default payouts are supported in this MVP.")
+
+    if default_schedule_cadence:
+        cadence = default_schedule_cadence.strip().lower()
+        if cadence not in SUPPORTED_PAYOUT_CADENCES:
+            raise RecipientValidationError("Default schedule must be manual, weekly, or monthly.")
+        day_raw = (default_schedule_day or "").strip().lower() or None
+        if cadence == "weekly":
+            if not day_raw or day_raw not in WEEKLY_DAYS:
+                raise RecipientValidationError("Weekly default schedule requires a valid weekday.")
+            day = day_raw
+        elif cadence == "monthly":
+            if not day_raw or not day_raw.isdigit() or not (1 <= int(day_raw) <= 28):
+                raise RecipientValidationError("Monthly default schedule requires a day between 1 and 28.")
+            day = day_raw
+        else:
+            day = None
+
+    return {
+        "default_payout_asset": asset,
+        "default_payout_amount": amount,
+        "default_schedule_cadence": cadence,
+        "default_schedule_day": day,
+    }
+
+
 def serialize_recipient(row: Recipient) -> dict[str, Any]:
+    schedule_label = _format_default_schedule(row.default_schedule_cadence, row.default_schedule_day)
     return {
         "id": row.id,
         "workspace_id": row.workspace_id,
@@ -90,6 +149,11 @@ def serialize_recipient(row: Recipient) -> dict[str, Any]:
         "network": row.network,
         "network_label": SUPPORTED_NETWORKS.get(row.network, row.network),
         "notes": row.notes,
+        "default_payout_asset": row.default_payout_asset,
+        "default_payout_amount": row.default_payout_amount,
+        "default_schedule_cadence": row.default_schedule_cadence,
+        "default_schedule_day": row.default_schedule_day,
+        "default_schedule_label": schedule_label,
         "status": row.status,
         "created_at": row.created_at.isoformat(),
         "updated_at": row.updated_at.isoformat(),
@@ -148,6 +212,10 @@ def create_recipient(
     wallet_address: str,
     network: str,
     notes: str | None = None,
+    default_payout_asset: str | None = None,
+    default_payout_amount: float | None = None,
+    default_schedule_cadence: str | None = None,
+    default_schedule_day: str | None = None,
 ) -> dict[str, Any]:
     workspace = get_current_workspace(db)
     fields = validate_recipient_fields(
@@ -155,6 +223,12 @@ def create_recipient(
         wallet_address=wallet_address,
         network=network,
         notes=notes,
+    )
+    payout_defaults = _validate_payout_defaults(
+        default_payout_asset=default_payout_asset,
+        default_payout_amount=default_payout_amount,
+        default_schedule_cadence=default_schedule_cadence,
+        default_schedule_day=default_schedule_day,
     )
 
     existing = db.exec(
@@ -173,6 +247,10 @@ def create_recipient(
         wallet_address=fields["wallet_address"],
         network=fields["network"],
         notes=fields["notes"],
+        default_payout_asset=payout_defaults["default_payout_asset"],
+        default_payout_amount=payout_defaults["default_payout_amount"],
+        default_schedule_cadence=payout_defaults["default_schedule_cadence"],
+        default_schedule_day=payout_defaults["default_schedule_day"],
         status="active",
     )
     db.add(row)
@@ -189,6 +267,11 @@ def update_recipient(
     wallet_address: str | None = None,
     network: str | None = None,
     notes: str | None = None,
+    default_payout_asset: str | None = None,
+    default_payout_amount: float | None = None,
+    default_schedule_cadence: str | None = None,
+    default_schedule_day: str | None = None,
+    clear_payout_defaults: bool = False,
 ) -> dict[str, Any]:
     workspace = get_current_workspace(db)
     row = db.get(Recipient, recipient_id)
@@ -207,6 +290,21 @@ def update_recipient(
         notes=next_notes,
     )
 
+    if clear_payout_defaults:
+        payout_defaults = {
+            "default_payout_asset": None,
+            "default_payout_amount": None,
+            "default_schedule_cadence": None,
+            "default_schedule_day": None,
+        }
+    else:
+        payout_defaults = _validate_payout_defaults(
+            default_payout_asset=default_payout_asset if default_payout_asset is not None else row.default_payout_asset,
+            default_payout_amount=default_payout_amount if default_payout_amount is not None else row.default_payout_amount,
+            default_schedule_cadence=default_schedule_cadence if default_schedule_cadence is not None else row.default_schedule_cadence,
+            default_schedule_day=default_schedule_day if default_schedule_day is not None else row.default_schedule_day,
+        )
+
     duplicate = db.exec(
         select(Recipient).where(
             Recipient.workspace_id == workspace.id,
@@ -222,6 +320,10 @@ def update_recipient(
     row.wallet_address = fields["wallet_address"]
     row.network = fields["network"]
     row.notes = fields["notes"]
+    row.default_payout_asset = payout_defaults["default_payout_asset"]
+    row.default_payout_amount = payout_defaults["default_payout_amount"]
+    row.default_schedule_cadence = payout_defaults["default_schedule_cadence"]
+    row.default_schedule_day = payout_defaults["default_schedule_day"]
     row.updated_at = utcnow()
     db.add(row)
     db.commit()

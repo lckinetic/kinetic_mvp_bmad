@@ -156,7 +156,8 @@ def build_treasury_view(
         "balance": balance,
         "wallet": {
             "id": wallet.id,
-            "provider_label": "Connected wallet",
+            "provider": wallet.provider,
+            "provider_label": "Privy custodial wallet",
             "address": wallet.address,
             "network": wallet.network,
             "network_label": network_label,
@@ -196,7 +197,7 @@ def simulate_deposit(
     *,
     settings: Settings,
     amount: float,
-    counterparty_label: str = "Demo deposit",
+    counterparty_label: str = "Corporate treasury · simulated USDC on-ramp",
 ) -> dict[str, Any]:
     if not settings.mock_mode:
         raise MockOnlyOperationError("Simulated deposits are only available in mock mode.")

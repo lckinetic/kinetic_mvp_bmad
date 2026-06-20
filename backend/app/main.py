@@ -3,6 +3,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from starlette.responses import Response
 import logging
 
 from app.core.config import get_settings
@@ -30,6 +31,17 @@ from app.api.alerts import router as alerts_router
 
 
 logger = logging.getLogger("kinetic")
+
+
+class NoCacheStaticFiles(StaticFiles):
+    """Serve UI kit assets without browser caching (local dev JSX reload)."""
+
+    async def get_response(self, path: str, scope):
+        response = await super().get_response(path, scope)
+        if isinstance(response, Response):
+            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+            response.headers["Pragma"] = "no-cache"
+        return response
 
 
 
@@ -66,7 +78,7 @@ def create_app() -> FastAPI:
     repo_root = Path(__file__).resolve().parents[2]
     ui_kit_dir = repo_root / "ui_kits" / "app"
     if ui_kit_dir.exists():
-        app.mount("/ui-kit", StaticFiles(directory=str(ui_kit_dir), html=True), name="ui-kit")
+        app.mount("/ui-kit", NoCacheStaticFiles(directory=str(ui_kit_dir), html=True), name="ui-kit")
 
     @app.get("/")
     def root():

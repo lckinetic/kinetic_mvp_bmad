@@ -124,6 +124,7 @@ def test_simulate_deposit_and_transfer_history() -> None:
         items = transfers.json()["items"]
         assert len(items) == 1
         assert items[0]["amount"] == 500.0
+        assert "Corporate treasury" in items[0]["counterparty_label"]
     finally:
         os.unlink(db_path)
 

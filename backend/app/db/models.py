@@ -165,6 +165,10 @@ class Recipient(SQLModel, table=True):
     wallet_address: str = Field(index=True)
     network: str = Field(index=True)
     notes: Optional[str] = None
+    default_payout_asset: Optional[str] = Field(default=None, max_length=12)
+    default_payout_amount: Optional[float] = Field(default=None)
+    default_schedule_cadence: Optional[str] = Field(default=None, max_length=20)
+    default_schedule_day: Optional[str] = Field(default=None, max_length=20)
     status: str = Field(default="active", index=True)  # active | inactive
     created_at: datetime = Field(default_factory=utcnow)
     updated_at: datetime = Field(default_factory=utcnow)

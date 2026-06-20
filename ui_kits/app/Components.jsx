@@ -71,14 +71,14 @@ function KInput({ label, hint, error, type = 'text', value, onChange, placeholde
   const inputId = React.useId();
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      {label && <label htmlFor={inputId} style={{ fontSize: 12, fontWeight: 500, color: KColors.fg2, letterSpacing: '0.01em' }}>{label}</label>}
+      {label && <label htmlFor={inputId} style={{ fontSize: 13, fontWeight: 500, color: KColors.fg2, letterSpacing: '0.01em' }}>{label}</label>}
       <input
         id={inputId}
         type={type} value={value} onChange={e => onChange && onChange(e.target.value)}
         placeholder={placeholder} min={min} max={max} step={step}
         onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
         style={{
-          fontFamily: 'inherit', fontSize: 14, padding: '8px 12px',
+          fontFamily: 'inherit', fontSize: 15, padding: '9px 12px',
           background: KColors.sunken, color: KColors.fg1,
           border: `1px solid ${error ? KColors.error : focused ? KColors.primary : KColors.borderStrong}`,
           borderRadius: 4, outline: 'none', width: '100%', boxSizing: 'border-box',
@@ -97,14 +97,14 @@ function KSelect({ label, hint, options, value, onChange, disabled = false }) {
   const selectId = React.useId();
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      {label && <label htmlFor={selectId} style={{ fontSize: 12, fontWeight: 500, color: KColors.fg2, letterSpacing: '0.01em' }}>{label}</label>}
+      {label && <label htmlFor={selectId} style={{ fontSize: 13, fontWeight: 500, color: KColors.fg2, letterSpacing: '0.01em' }}>{label}</label>}
       <select
         id={selectId}
         value={value} onChange={e => onChange && onChange(e.target.value)}
         onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
         disabled={disabled}
         style={{
-          fontFamily: 'inherit', fontSize: 14, padding: '8px 12px',
+          fontFamily: 'inherit', fontSize: 15, padding: '9px 12px',
           background: KColors.sunken, color: KColors.fg1,
           border: `1px solid ${focused ? KColors.primary : KColors.borderStrong}`,
           borderRadius: 4, outline: 'none', width: '100%', boxSizing: 'border-box',
@@ -130,7 +130,7 @@ function KPill({ status, children }) {
   };
   const s = styles[status] || styles.default;
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 9px', borderRadius: 9999, background: s.bg, color: s.color, fontSize: 11, fontWeight: 500, whiteSpace: 'nowrap' }}>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 9px', borderRadius: 9999, background: s.bg, color: s.color, fontSize: 12, fontWeight: 500, whiteSpace: 'nowrap' }}>
       <span style={{ width: 5, height: 5, borderRadius: '50%', background: s.dot, flexShrink: 0 }}/>
       {children ?? status}
     </span>
@@ -211,7 +211,49 @@ function KCodeBlock({ value, onChange, readOnly, minHeight = 120 }) {
 
 // ── Section label ─────────────────────────────────────
 function KSectionLabel({ children }) {
-  return <div style={{ fontSize: 11, fontWeight: 600, color: KColors.fg3, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8 }}>{children}</div>;
+  return <div style={{ fontSize: 12, fontWeight: 600, color: KColors.fg3, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 8 }}>{children}</div>;
+}
+
+function KCopyIconButton({ text, title = 'Copy', size = 15 }) {
+  const [copied, setCopied] = React.useState(false);
+  function handleCopy() {
+    if (!text) return;
+    const done = () => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    };
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(() => {});
+      return;
+    }
+    done();
+  }
+  React.useEffect(() => {
+    if (window.lucide) lucide.createIcons();
+  }, [copied]);
+  return (
+    <button
+      type="button"
+      aria-label={copied ? 'Copied' : title}
+      title={copied ? 'Copied' : title}
+      onClick={handleCopy}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 32,
+        height: 32,
+        borderRadius: 6,
+        border: `1px solid ${KColors.borderStrong}`,
+        background: copied ? KColors.successBg : KColors.overlay,
+        color: copied ? KColors.success : KColors.fg2,
+        cursor: text ? 'pointer' : 'not-allowed',
+        opacity: text ? 1 : 0.45,
+      }}
+    >
+      <i data-lucide={copied ? 'check' : 'copy'} style={{ width: size, height: size }}></i>
+    </button>
+  );
 }
 
 // ── Divider ───────────────────────────────────────────
@@ -368,7 +410,7 @@ function KSidebar({ active, onNavigate, navItems }) {
               borderRadius: 6, border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%',
               background: active === item.id ? KColors.primaryDim : 'transparent',
               color: active === item.id ? KColors.primaryLight : KColors.fg2,
-              fontSize: 13, fontWeight: 500, fontFamily: 'inherit',
+              fontSize: 14, fontWeight: 500, fontFamily: 'inherit',
               transition: 'background 120ms ease-out, color 120ms ease-out',
             }}
           >
@@ -387,7 +429,7 @@ function KSidebar({ active, onNavigate, navItems }) {
 
 Object.assign(window, {
   KColors, KLogo, KButton, KInput, KSelect, KPill, KStepper, KStepsTable, KCodeBlock, KSectionLabel, KDivider, KSidebar,
-  KEmptyState, SetupChecklist, KWidgetShell,
+  KEmptyState, SetupChecklist, KWidgetShell, KCopyIconButton,
   WORKSPACE_STORAGE_KEY, CHECKLIST_STORAGE_PREFIX, DEFAULT_CHECKLIST,
   loadWorkspace, saveWorkspace, clearWorkspace, loadChecklist, saveChecklist, markChecklistStep,
 });

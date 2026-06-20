@@ -165,7 +165,7 @@ def simulate_deposit_route(
             db,
             settings=settings,
             amount=body.amount,
-            counterparty_label=body.counterparty_label or "Demo deposit",
+            counterparty_label=body.counterparty_label or "Corporate treasury · simulated USDC on-ramp",
         )
     except WorkspaceNotFoundError as exc:
         raise HTTPException(

@@ -17,7 +17,7 @@ This is the canonical walkthrough for product demos after Phase 2 Sprint 1 (hero
 3. Complete onboarding: audience → preview → create workspace → **Go to Dashboard**.
 4. On **Dashboard**, review the setup checklist (treasury, recipients, workflow, activity).
 5. Navigate to **Treasury** → **Create treasury wallet**.
-6. Use **Simulate deposit** (mock mode) to fund the treasury, then confirm balance and transaction history update.
+6. On **Treasury**, run the **Fund treasury** wizard: link fiat treasury → simulate on-ramp → deposit USDC to Privy wallet. Confirm balance and transaction history update.
 7. Optionally click **Check payout readiness** to see the insufficient-balance guidance when unfunded.
 8. Navigate to **Recipients** → **Add recipient** (name, network, wallet address) and confirm the directory list updates.
 9. Navigate to **Workflows** → **Create payout workflow** (recipient, amount, schedule) → **Run now**.

@@ -57,6 +57,20 @@ function emptyWorkflowForm() {
   return { name: '', recipient: null, amount: '500', schedule_cadence: 'manual', schedule_day: 'friday' };
 }
 
+function applyRecipientDefaults(recipient, prevForm) {
+  if (!recipient || typeof recipient !== 'object') {
+    return { ...prevForm, recipient: null };
+  }
+  return {
+    ...prevForm,
+    recipient,
+    name: prevForm.name || `${recipient.name} payout`,
+    amount: recipient.default_payout_amount != null ? String(recipient.default_payout_amount) : prevForm.amount,
+    schedule_cadence: recipient.default_schedule_cadence || prevForm.schedule_cadence,
+    schedule_day: recipient.default_schedule_day || prevForm.schedule_day || 'friday',
+  };
+}
+
 function WorkflowsShell({ onNavigate, onChecklistStep }) {
   const [items, setItems] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
@@ -291,7 +305,12 @@ function WorkflowsShell({ onNavigate, onChecklistStep }) {
             <div style={{ fontSize: 16, fontWeight: 700, color: KColors.fg1 }}>{editing ? 'Edit payout workflow' : 'Create payout workflow'}</div>
             {formError && <div style={{ fontSize: 12, color: KColors.error, background: KColors.errorBg, borderRadius: 6, padding: '8px 10px' }}>{formError}</div>}
             <KInput label="Workflow name" value={form.name} onChange={v => setForm(prev => ({ ...prev, name: v }))} placeholder="Friday contractor payout" />
-            <RecipientPicker value={form.recipient?.id} onChange={recipient => setForm(prev => ({ ...prev, recipient }))} label="Recipient" />
+            <RecipientPicker
+              value={form.recipient?.id}
+              onChange={recipient => setForm(prev => applyRecipientDefaults(recipient, prev))}
+              label="Recipient"
+              hint="Selecting a recipient pre-fills default payout amount and schedule when configured"
+            />
             <KInput label="Amount (USDC)" value={form.amount} onChange={v => setForm(prev => ({ ...prev, amount: v }))} placeholder="500" />
             <KSelect label="Schedule" value={form.schedule_cadence} onChange={v => setForm(prev => ({ ...prev, schedule_cadence: v }))} options={SCHEDULE_OPTIONS} />
             {form.schedule_cadence === 'weekly' && (

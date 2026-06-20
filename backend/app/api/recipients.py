@@ -27,6 +27,10 @@ class RecipientCreateRequest(BaseModel):
     wallet_address: str = Field(min_length=4, max_length=200)
     network: str = Field(min_length=2, max_length=40)
     notes: str | None = Field(default=None, max_length=500)
+    default_payout_asset: str | None = Field(default=None, max_length=12)
+    default_payout_amount: float | None = Field(default=None, gt=0)
+    default_schedule_cadence: str | None = Field(default=None, max_length=20)
+    default_schedule_day: str | None = Field(default=None, max_length=20)
 
 
 class RecipientUpdateRequest(BaseModel):
@@ -34,6 +38,10 @@ class RecipientUpdateRequest(BaseModel):
     wallet_address: str | None = Field(default=None, max_length=200)
     network: str | None = Field(default=None, max_length=40)
     notes: str | None = Field(default=None, max_length=500)
+    default_payout_asset: str | None = Field(default=None, max_length=12)
+    default_payout_amount: float | None = Field(default=None, gt=0)
+    default_schedule_cadence: str | None = Field(default=None, max_length=20)
+    default_schedule_day: str | None = Field(default=None, max_length=20)
 
 
 def _workspace_missing(exc: WorkspaceNotFoundError) -> HTTPException:
@@ -75,6 +83,10 @@ def create_recipient_route(body: RecipientCreateRequest, db: Session = Depends(g
             wallet_address=body.wallet_address,
             network=body.network,
             notes=body.notes,
+            default_payout_asset=body.default_payout_asset,
+            default_payout_amount=body.default_payout_amount,
+            default_schedule_cadence=body.default_schedule_cadence,
+            default_schedule_day=body.default_schedule_day,
         )
     except WorkspaceNotFoundError as exc:
         raise _workspace_missing(exc) from exc
@@ -117,6 +129,10 @@ def update_recipient_route(
             wallet_address=body.wallet_address,
             network=body.network,
             notes=body.notes,
+            default_payout_asset=body.default_payout_asset,
+            default_payout_amount=body.default_payout_amount,
+            default_schedule_cadence=body.default_schedule_cadence,
+            default_schedule_day=body.default_schedule_day,
         )
     except WorkspaceNotFoundError as exc:
         raise _workspace_missing(exc) from exc

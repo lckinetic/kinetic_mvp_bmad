@@ -10,6 +10,8 @@ function Dashboard({ workspace, checklist, onNavigate, refreshKey = 0 }) {
   const [activityLoading, setActivityLoading] = React.useState(true);
   const [alerts, setAlerts] = React.useState([]);
   const [alertsLoading, setAlertsLoading] = React.useState(true);
+  const [upcomingPayouts, setUpcomingPayouts] = React.useState([]);
+  const [upcomingLoading, setUpcomingLoading] = React.useState(true);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -78,6 +80,27 @@ function Dashboard({ workspace, checklist, onNavigate, refreshKey = 0 }) {
 
   React.useEffect(() => {
     let cancelled = false;
+    async function loadUpcoming() {
+      setUpcomingLoading(true);
+      try {
+        const res = await fetch(`${window.KINETIC_API_BASE || ''}/payout-workflows`);
+        const body = await res.json();
+        if (!cancelled && res.ok) {
+          const rows = (body.items || []).filter(row => row.enabled && row.schedule_cadence !== 'manual');
+          setUpcomingPayouts(rows);
+        }
+      } catch {
+        if (!cancelled) setUpcomingPayouts([]);
+      } finally {
+        if (!cancelled) setUpcomingLoading(false);
+      }
+    }
+    loadUpcoming();
+    return () => { cancelled = true; };
+  }, [workspace?.id, refreshKey]);
+
+  React.useEffect(() => {
+    let cancelled = false;
     async function loadAlerts() {
       setAlertsLoading(true);
       try {
@@ -115,7 +138,7 @@ function Dashboard({ workspace, checklist, onNavigate, refreshKey = 0 }) {
       : Number(treasuryBalance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   return (
-    <div style={{ padding: 20, height: '100%', overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 18 }}>
+    <div style={{ padding: 20, height: '100%', overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 18, fontSize: 14 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
         <div>
           <div style={{ fontSize: 12, color: KColors.fg3, letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 600 }}>Operations overview</div>
@@ -202,7 +225,22 @@ function Dashboard({ workspace, checklist, onNavigate, refreshKey = 0 }) {
           )}
         </KWidgetShell>
         <KWidgetShell title="Upcoming payouts" actionLabel="Workflows" onAction={() => onNavigate('workflows')}>
-          <KEmptyState icon="calendar" title="Nothing scheduled" description="Scheduled contractor payouts will show here once workflows are configured." actionLabel="Create payout workflow" onAction={() => onNavigate('workflows')} />
+          {upcomingLoading ? (
+            <div style={{ fontSize: 14, color: KColors.fg3 }}>Loading schedule…</div>
+          ) : upcomingPayouts.length === 0 ? (
+            <KEmptyState icon="calendar" title="Nothing scheduled" description="Enabled weekly or monthly payout workflows will show here." actionLabel="Create payout workflow" onAction={() => onNavigate('workflows')} />
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {upcomingPayouts.map(row => (
+                <div key={row.id} style={{ padding: '10px 12px', borderRadius: 8, background: KColors.raised, border: `1px solid ${KColors.border}` }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: KColors.fg1 }}>{row.name}</div>
+                  <div style={{ marginTop: 4, fontSize: 13, color: KColors.fg2 }}>
+                    {row.recipient?.name || 'Recipient'} · {row.amount} {row.asset} · {row.schedule_label}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </KWidgetShell>
       </div>
     </div>

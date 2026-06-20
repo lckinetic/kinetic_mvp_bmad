@@ -24,7 +24,51 @@ async function recipientsRequest(path, options = {}) {
 }
 
 function emptyForm() {
-  return { name: '', wallet_address: '', network: 'base', notes: '' };
+  return {
+    name: '',
+    wallet_address: '',
+    network: 'base',
+    notes: '',
+    default_payout_amount: '',
+    default_schedule_cadence: 'manual',
+    default_schedule_day: 'friday',
+  };
+}
+
+const RECIPIENT_SCHEDULE_OPTIONS = [
+  { value: 'manual', label: 'Manual / per workflow' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'monthly', label: 'Monthly' },
+];
+
+const RECIPIENT_WEEKDAY_OPTIONS = [
+  { value: 'monday', label: 'Monday' },
+  { value: 'tuesday', label: 'Tuesday' },
+  { value: 'wednesday', label: 'Wednesday' },
+  { value: 'thursday', label: 'Thursday' },
+  { value: 'friday', label: 'Friday' },
+  { value: 'saturday', label: 'Saturday' },
+  { value: 'sunday', label: 'Sunday' },
+];
+
+function buildRecipientPayload(form) {
+  const amountRaw = String(form.default_payout_amount || '').trim();
+  const amount = amountRaw ? Number(amountRaw) : null;
+  return {
+    name: form.name,
+    wallet_address: form.wallet_address,
+    network: form.network,
+    notes: form.notes || null,
+    default_payout_asset: amount ? 'USDC' : null,
+    default_payout_amount: amount,
+    default_schedule_cadence: form.default_schedule_cadence === 'manual' ? null : form.default_schedule_cadence,
+    default_schedule_day: form.default_schedule_cadence === 'manual' ? null : form.default_schedule_day,
+  };
+}
+
+function formatPayoutAmount(row) {
+  if (row.default_payout_amount == null) return '—';
+  return `${row.default_payout_amount} ${row.default_payout_asset || 'USDC'}`;
 }
 
 function Recipients({ onNavigate, onChecklistStep }) {
@@ -107,6 +151,9 @@ function Recipients({ onNavigate, onChecklistStep }) {
       wallet_address: row.wallet_address || '',
       network: row.network || 'base',
       notes: row.notes || '',
+      default_payout_amount: row.default_payout_amount != null ? String(row.default_payout_amount) : '',
+      default_schedule_cadence: row.default_schedule_cadence || 'manual',
+      default_schedule_day: row.default_schedule_day || 'friday',
     });
     setFormError('');
     setModalOpen(true);
@@ -119,12 +166,12 @@ function Recipients({ onNavigate, onChecklistStep }) {
       if (editing) {
         await recipientsRequest(`/${editing.id}`, {
           method: 'PATCH',
-          body: JSON.stringify(form),
+          body: JSON.stringify(buildRecipientPayload(form)),
         });
       } else {
         await recipientsRequest('', {
           method: 'POST',
-          body: JSON.stringify(form),
+          body: JSON.stringify(buildRecipientPayload(form)),
         });
       }
       setModalOpen(false);
@@ -153,7 +200,7 @@ function Recipients({ onNavigate, onChecklistStep }) {
   const activeCount = items.filter(row => row.status === 'active').length;
 
   return (
-    <div style={{ padding: 20, height: '100%', overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div style={{ padding: 20, height: '100%', overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 16, fontSize: 14 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <div>
           <div style={{ fontSize: 12, color: KColors.fg3, letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 600 }}>Recipients</div>
@@ -181,8 +228,8 @@ function Recipients({ onNavigate, onChecklistStep }) {
       )}
 
       <div style={{ background: KColors.overlay, border: `1px solid ${KColors.border}`, borderRadius: 10, overflow: 'hidden' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.7fr 1.3fr 0.7fr 0.8fr', gap: 8, padding: '10px 14px', borderBottom: `1px solid ${KColors.border}`, fontSize: 11, fontWeight: 600, color: KColors.fg3, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-          <span>Name</span><span>Network</span><span>Wallet address</span><span>Status</span><span>Actions</span>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.8fr 0.9fr 0.7fr 1.1fr 0.7fr 0.9fr', gap: 8, padding: '10px 14px', borderBottom: `1px solid ${KColors.border}`, fontSize: 12, fontWeight: 600, color: KColors.fg3, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+          <span>Name</span><span>Payout</span><span>Frequency</span><span>Network</span><span>Wallet address</span><span>Status</span><span>Actions</span>
         </div>
 
         {loading ? (
@@ -199,12 +246,14 @@ function Recipients({ onNavigate, onChecklistStep }) {
           items.map(row => (
             <div
               key={row.id}
-              style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.7fr 1.3fr 0.7fr 0.8fr', gap: 8, padding: '12px 14px', borderBottom: `1px solid ${KColors.border}`, alignItems: 'center', fontSize: 13 }}
+              style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.8fr 0.9fr 0.7fr 1.1fr 0.7fr 0.9fr', gap: 8, padding: '12px 14px', borderBottom: `1px solid ${KColors.border}`, alignItems: 'center', fontSize: 14 }}
             >
               <div>
                 <div style={{ color: KColors.fg1, fontWeight: 600 }}>{row.name}</div>
-                {row.notes && <div style={{ marginTop: 2, fontSize: 11, color: KColors.fg3 }}>{row.notes}</div>}
+                {row.notes && <div style={{ marginTop: 2, fontSize: 12, color: KColors.fg3 }}>{row.notes}</div>}
               </div>
+              <span style={{ color: KColors.fg1, fontFamily: 'IBM Plex Mono, monospace', fontSize: 13 }}>{formatPayoutAmount(row)}</span>
+              <span style={{ color: KColors.fg2 }}>{row.default_schedule_label || '—'}</span>
               <span style={{ color: KColors.fg2 }}>{row.network_label}</span>
               <span style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 12, color: KColors.fg2 }} title={row.wallet_address}>{row.wallet_address_short}</span>
               <span><KPill status={row.status === 'active' ? 'completed' : 'pending'}>{row.status}</KPill></span>
@@ -230,6 +279,16 @@ function Recipients({ onNavigate, onChecklistStep }) {
             <KSelect label="Network" value={form.network} onChange={v => setForm(prev => ({ ...prev, network: v }))} options={networkOptions} />
             <KInput label="Wallet address" value={form.wallet_address} onChange={v => setForm(prev => ({ ...prev, wallet_address: v }))} placeholder="0x..." />
             <KInput label="Notes (optional)" value={form.notes} onChange={v => setForm(prev => ({ ...prev, notes: v }))} placeholder="Contractor, monthly retainer, etc." />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <KInput label="Default payout (USDC)" value={form.default_payout_amount} onChange={v => setForm(prev => ({ ...prev, default_payout_amount: v }))} placeholder="500" />
+              <KSelect label="Default frequency" value={form.default_schedule_cadence} onChange={v => setForm(prev => ({ ...prev, default_schedule_cadence: v }))} options={RECIPIENT_SCHEDULE_OPTIONS} />
+            </div>
+            {form.default_schedule_cadence === 'weekly' && (
+              <KSelect label="Default weekday" value={form.default_schedule_day} onChange={v => setForm(prev => ({ ...prev, default_schedule_day: v }))} options={RECIPIENT_WEEKDAY_OPTIONS} />
+            )}
+            {form.default_schedule_cadence === 'monthly' && (
+              <KInput label="Default day of month (1-28)" value={form.default_schedule_day} onChange={v => setForm(prev => ({ ...prev, default_schedule_day: v }))} placeholder="1" />
+            )}
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
               <KButton variant="secondary" onClick={() => setModalOpen(false)}>Cancel</KButton>
               <KButton disabled={busy || !form.name.trim() || !form.wallet_address.trim()} onClick={handleSave}>

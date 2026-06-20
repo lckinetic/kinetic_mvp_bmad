@@ -209,3 +209,31 @@ def test_update_deactivate_and_search_recipients() -> None:
         assert len(with_inactive.json()["items"]) == 1
     finally:
         os.unlink(db_path)
+
+
+def test_recipient_payout_defaults_round_trip() -> None:
+    app, db_path = _app_with_test_db()
+    try:
+        client = TestClient(app)
+        _bootstrap_workspace(client)
+
+        created = client.post(
+            "/recipients",
+            json={
+                "name": "Alice Chen",
+                "wallet_address": "0xAbCdEf0123456789AbCdEf0123456789AbCdEf01",
+                "network": "base",
+                "default_payout_amount": 500,
+                "default_schedule_cadence": "weekly",
+                "default_schedule_day": "friday",
+            },
+        )
+        assert created.status_code == 200
+        payload = created.json()
+        assert payload["default_payout_amount"] == 500
+        assert payload["default_payout_asset"] == "USDC"
+        assert payload["default_schedule_cadence"] == "weekly"
+        assert payload["default_schedule_day"] == "friday"
+        assert payload["default_schedule_label"] == "Every Friday"
+    finally:
+        os.unlink(db_path)
