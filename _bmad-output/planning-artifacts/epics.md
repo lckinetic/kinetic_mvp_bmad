@@ -68,6 +68,17 @@ NFR-P1–P3 Performance · NFR-S1–S4 Security · NFR-R1–R2 Reliability · NF
 14. **E14 — Activity centre** (unified operational timeline)
 15. **E15 — Monitoring & alerts** (failure visibility, exceptions)
 16. **E16 — AI workflow assistant (hero payout templates)** (NL → editable draft)
+17. **E17 — Hero flow feedback (round 1)** (demo UX polish — done)
+18. **E18 — Live hero operations (non-mock mode)** (Privy required; Banxa optional)
+
+Execution order for **Phase 3 (live operations)**:
+
+1. **E18 Sprint A** — Privy treasury + inbound deposit detection (required)
+2. **E18 Sprint C** — Live payout execution (required)
+3. **E18 Sprint D** — Docs, env templates, diagnostics (required)
+4. **E18 Sprint B** — Banxa on-ramp _(optional, when credentials available)_
+
+Canonical plan: `_bmad-output/planning-artifacts/phase-3-live-operations/epic-plan.md`.
 
 ### Sprint sequencing update (2026-04-24)
 
@@ -789,3 +800,121 @@ So that **I know how to describe contractor payout workflows**.
 As a **developer**,  
 I want **live AI payout generation with sanitized error envelopes**,  
 So that **production-like testing works via AI_MOCK_MODE=false**.
+
+---
+
+## Epic 17: Hero flow feedback (round 1)
+
+**Goal:** Apply demo walkthrough feedback — treasury clarity, recipient payout defaults, dashboard schedules, UX polish.
+
+_Stories 17.1–17.7 — see `_bmad-output/planning-artifacts/phase-2-hero-workflow/hero-flow-feedback-round-1.md`. Status: **done**._
+
+---
+
+## Epic 18: Live hero operations (non-mock mode)
+
+**Goal:** Run the hero journey against **Privy** (treasury + payouts) when `MOCK_MODE=false`. **Banxa on-ramp is optional** — manual sandbox USDC deposit is the required funding path.
+
+_Canonical plan: `_bmad-output/planning-artifacts/phase-3-live-operations/epic-plan.md`._
+
+### Story 18.1: Privy settings & startup validation
+
+As a **developer**,  
+I want **required Privy env vars validated when MOCK_MODE=false**,  
+So that **live startup fails fast with a clear configuration error**.
+
+### Story 18.2: Live Privy treasury wallet create
+
+As a **treasury manager**,  
+I want **a real Privy custodial wallet provisioned for my workspace**,  
+So that **I receive a live sandbox deposit address**.
+
+### Story 18.3: Live balance read & reconciliation
+
+As a **finance ops user**,  
+I want **treasury balance to reflect provider USDC balance**,  
+So that **payout readiness matches funds on the wallet**.
+
+### Story 18.4: Treasury config-status & UI live indicators
+
+As a **demo operator**,  
+I want **live vs mock mode visible in the UI and via config-status APIs**,  
+So that **I know which provider path is active**.
+
+### Story 18.5: Live mode guardrails
+
+As a **developer**,  
+I want **mock-only treasury endpoints blocked in live mode**,  
+So that **demo shortcuts cannot corrupt live ledger state** and **manual sandbox USDC deposit is documented as the funding path**.
+
+### Story 18.9: Inbound deposit detection
+
+As a **system**,  
+I want **inbound USDC deposits detected via webhook or polling**,  
+So that **manual transfers to the treasury address are recorded** _(required for live funding without Banxa)_.
+
+### Story 18.6: Banxa sandbox on-ramp adapter _(optional)_
+
+As a **developer**,  
+I want **real Banxa sandbox on-ramp orders**,  
+So that **the funding wizard can initiate a live on-ramp**.
+
+### Story 18.7: On-ramp → treasury deposit reconciliation _(optional)_
+
+As a **system**,  
+I want **completed on-ramps to credit the treasury ledger**,  
+So that **inbound funding appears in balance and activity history**.
+
+### Story 18.8: Live funding wizard integration _(optional)_
+
+As a **treasury manager**,  
+I want **the fund treasury wizard to call live on-ramp when Banxa is configured**,  
+So that **fiat on-ramp is available without blocking the manual deposit path**.
+
+### Story 18.10: Privy outbound USDC transfer
+
+As a **developer**,  
+I want **Privy to send USDC from treasury to a recipient address**,  
+So that **payouts move funds on-chain (sandbox)**.
+
+### Story 18.11: contractor_payout live execution path
+
+As a **finance ops user**,  
+I want **payout workflow runs to execute a live Privy transfer**,  
+So that **successful runs correspond to real sandbox transactions**.
+
+### Story 18.12: Real tx metadata on transfers
+
+As an **operator**,  
+I want **transaction history to show provider tx references**,  
+So that **I can trace payouts in Activity Centre and block explorers**.
+
+### Story 18.13: Sandbox payout integration tests
+
+As a **developer**,  
+I want **integration tests for the live payout adapter path**,  
+So that **regressions are caught without manual sandbox runs**.
+
+### Story 18.14: Live onboarding docs
+
+As a **new developer**,  
+I want **documented steps to configure live sandbox mode**,  
+So that **I can run MOCK_MODE=false locally without tribal knowledge**.
+
+### Story 18.15: .env.live.example template
+
+As a **developer**,  
+I want **a live env template with all required provider keys**,  
+So that **configuration is copy-paste safe and complete**.
+
+### Story 18.16: Live hero demo script
+
+As a **demo operator**,  
+I want **a canonical live sandbox walkthrough**,  
+So that **stakeholders see real provider transactions in the hero flow**.
+
+### Story 18.17: Provider diagnostics in Settings
+
+As an **operator**,  
+I want **Settings to show Privy/Banxa configuration status**,  
+So that **I can verify readiness before a live demo**.

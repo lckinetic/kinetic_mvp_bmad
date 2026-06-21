@@ -172,3 +172,23 @@ development_status:
   17-10-workflow-prefill-from-recipient: done
   17-11-dashboard-upcoming-scheduled-payouts: done
   epic-17-retrospective: optional
+
+  epic-18: backlog
+  18-1-privy-settings-and-startup-validation: backlog
+  18-2-live-privy-treasury-wallet-create: backlog
+  18-3-live-balance-read-and-reconciliation: backlog
+  18-4-treasury-config-status-and-ui-live-indicators: backlog
+  18-5-live-mode-guardrails: backlog
+  18-9-inbound-deposit-detection: backlog
+  18-6-banxa-sandbox-on-ramp-adapter: optional
+  18-7-on-ramp-to-treasury-deposit-reconciliation: optional
+  18-8-live-funding-wizard-integration: optional
+  18-10-privy-outbound-usdc-transfer: backlog
+  18-11-contractor-payout-live-execution-path: backlog
+  18-12-real-tx-metadata-on-transfers: backlog
+  18-13-sandbox-payout-integration-tests: backlog
+  18-14-live-onboarding-docs: backlog
+  18-15-env-live-example-template: backlog
+  18-16-live-hero-demo-script: backlog
+  18-17-provider-diagnostics-in-settings: backlog
+  epic-18-retrospective: optional
